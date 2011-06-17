@@ -1,0 +1,7 @@
+Name: plot-sharp
+Description: plot-sharp
+Version: @VERSION@
+Libraries=
+
+Requires:
+Libs:

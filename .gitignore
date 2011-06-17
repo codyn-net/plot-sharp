@@ -1,0 +1,14 @@
+bin
+config.log
+autom4te.cache
+aclocal.m4
+config.status
+configure
+install-sh
+Makefile
+Makefile.in
+missing
+Plot/Directories.cs
+*.pc
+*.pidb
+*.userprefs
