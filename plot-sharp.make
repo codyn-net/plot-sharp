@@ -31,10 +31,6 @@ PLOT_SHARP_DLL_MDB=
 
 endif
 
-if USE_UNIXSIGNAL
-ASSEMBLY_COMPILER_FLAGS += -d:USE_UNIXSIGNAL
-endif
-
 AL=al2
 SATELLITE_ASSEMBLY_NAME=$(notdir $(basename $(ASSEMBLY))).resources.dll
 
