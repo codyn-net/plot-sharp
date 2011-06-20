@@ -10,6 +10,45 @@ namespace Plot
 		private double d_a;
 		
 		public event EventHandler Changed = delegate {};
+		
+		public Color(string html)
+		{
+			if (!html.StartsWith("#"))
+			{
+				return;
+			}
+			
+			string rest = html.Substring(1);
+			
+			if (rest.Length == 3)
+			{
+				rest = new string(new char[] {rest[0], rest[0], rest[1], rest[1], rest[2], rest[2]});
+			}
+			else if (rest.Length == 4)
+			{
+				rest = new string(new char[] {rest[0], rest[0], rest[1], rest[1], rest[2], rest[2], rest[3], rest[3]});
+			}
+			
+			if (rest.Length == 6)
+			{
+				rest += "ff";	
+			}
+			
+			if (rest.Length != 8)
+			{
+				return;
+			}
+			
+			d_r = FromHex(rest.Substring(0, 2));
+			d_g = FromHex(rest.Substring(2, 2));
+			d_b = FromHex(rest.Substring(4, 2));
+			d_a = FromHex(rest.Substring(6, 2));
+		}
+		
+		private double FromHex(string hex)
+		{
+			return Convert.ToInt32(hex, 16) / 255.0;
+		}
 
 		public Color(double r, double g, double b, double a)
 		{

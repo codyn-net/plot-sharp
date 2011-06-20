@@ -46,7 +46,18 @@ RESGEN=resgen2
 all: $(ASSEMBLY) $(PROGRAMFILES) $(LINUX_PKGCONFIG)
 
 FILES = \
-	Plot/AssemblyInfo.cs
+	Plot/AssemblyInfo.cs \
+	Plot/Color.cs \
+	Plot/Container.cs \
+	Plot/Directories.cs \
+	Plot/ExtensionMethods.cs \
+	Plot/Graph.cs \
+	Plot/Point.cs \
+	Plot/Range.cs \
+	Plot/Rectangle.cs \
+	Plot/RequestSurfaceHandler.cs \
+	Plot/Ticks.cs
+
 
 DATA_FILES =
 
@@ -56,7 +67,10 @@ EXTRAS = \
 	plot-sharp.pc.in
 
 REFERENCES =  \
-	System
+	System \
+	System.Core \
+	Mono.Cairo \
+	$(GTK_SHARP_LIBS)
 
 DLL_REFERENCES =
 

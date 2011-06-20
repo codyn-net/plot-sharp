@@ -50,6 +50,8 @@ fi
 dnl package checks, common for all configs
 dnl package checks, per config
 
+PKG_CHECK_MODULES([GTK_SHARP], [gtk-sharp-2.0])
+
 UNSTABLE_INSTALL_ASSEMBLIES=""
 INSTALLED_ASSEMBLIES=""
 AC_SUBST(INSTALLED_ASSEMBLIES)

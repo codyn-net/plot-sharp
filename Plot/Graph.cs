@@ -7,7 +7,7 @@ namespace Plot
 	public class Graph : IDisposable
 	{		
 		private bool d_showRuler;
-		private List<Container> d_data;
+		private List<LineSeries> d_data;
 		
 		private Range<double> d_xaxis;
 		private Range<double> d_yaxis;
@@ -39,14 +39,14 @@ namespace Plot
 		static Graph()
 		{
 			s_colors = new Color[] {
-				new Color(0, 0, 0.6),
-				new Color(0, 0.6, 0),
-				new Color(0.6, 0, 0),
-				new Color(0, 0.6, 0.6),
-				new Color(0.6, 0.6, 0),
-				new Color(0.6, 0, 0.6),
-				new Color(0.6, 0.6, 0.6),
-				new Color(0, 0, 0)
+				new Color("#729fcf"),
+				new Color("#8ae234"),
+				new Color("#ef2929"),
+				new Color("#fce94f"),
+				new Color("#ad7fa8"),
+				new Color("#fcaf3e"),
+				new Color("#888a85"),
+				new Color("#e9b96e")
 			};
 		}
 		
@@ -74,7 +74,7 @@ namespace Plot
 		public Graph(Range<double> xaxis, Range<double> yaxis)
 		{
 			d_showRuler = true;
-			d_data = new List<Container>();
+			d_data = new List<LineSeries>();
 			
 			d_xaxis = xaxis;
 			d_yaxis = yaxis;
@@ -220,7 +220,7 @@ namespace Plot
 			}
 		}
 		
-		public Container[] Plots
+		public LineSeries[] Plots
 		{
 			get
 			{
@@ -250,7 +250,7 @@ namespace Plot
 			
 			bool isset = false;
 			
-			foreach (Container cont in d_data)
+			foreach (LineSeries cont in d_data)
 			{
 				Point<double> min = cont.Data.Min();
 				Point<double> max = cont.Data.Max();
@@ -293,40 +293,40 @@ namespace Plot
 			SetTicks(width, 0);
 		}
 
-		public void Add(Container container)
+		public void Add(LineSeries series)
 		{
-			if (container.Color == null)
+			if (series.Color == null)
 			{
-				container.Color = NextColor();
+				series.Color = NextColor();
 			}
 
-			d_data.Add(container);
+			d_data.Add(series);
 			
 			if (d_ruleWhich < 0)
 			{
 				d_ruleWhich = 0;
 			}
 			
-			container.Changed += HandleContainerChanged;
+			series.Changed += HandleLineSeriesChanged;
 			
 			Redraw();
 		}
 
-		private void HandleContainerChanged(object sender, EventArgs e)
+		private void HandleLineSeriesChanged(object sender, EventArgs e)
 		{
 			Redraw();
 		}
 		
-		public void Remove(Container container)
+		public void Remove(LineSeries series)
 		{
-			if (!d_data.Contains(container))
+			if (!d_data.Contains(series))
 			{
 				return;
 			}
 
-			container.Changed -= HandleContainerChanged;
+			series.Changed -= HandleLineSeriesChanged;
 			
-			d_data.Remove(container);
+			d_data.Remove(series);
 			
 			if (d_ruleWhich >= d_data.Count)
 			{
@@ -340,14 +340,14 @@ namespace Plot
 		{
 			get
 			{
-				return new Point<double>((double)(d_dimensions.Width / d_xaxis.Span()),
-				                         (double)(d_dimensions.Height / d_yaxis.Span()));
+				return new Point<double>((double)((d_dimensions.Width - 2) / d_xaxis.Span()),
+				                         (double)((d_dimensions.Height - 2) / d_yaxis.Span()));
 			}
 		}
 
 		public void ProcessAppend()
 		{
-			Container maxunp = d_data.Aggregate(delegate (Container a, Container b) {
+			LineSeries maxunp = d_data.Aggregate(delegate (LineSeries a, LineSeries b) {
 				if (a.Unprocessed > b.Unprocessed)
 				{
 					return a;
@@ -365,22 +365,22 @@ namespace Plot
 			
 			int m = maxunp.Unprocessed;
 						
-			foreach (Container container in d_data)
+			foreach (LineSeries series in d_data)
 			{
-				Point<double> last = container[-1];
-				int missing = m - container.Unprocessed;
+				Point<double> last = series[-1];
+				int missing = m - series.Unprocessed;
 				
 				for (int i = maxunp.Count - missing; i < maxunp.Count; ++i)
 				{
-					container.Append(new Point<double>(maxunp[i].X, last.Y));
+					series.Append(new Point<double>(maxunp[i].X, last.Y));
 				}
 			}
 			
 			RedrawUnprocessed(m);
 			
-			foreach (Container container in d_data)
+			foreach (LineSeries series in d_data)
 			{
-				container.Processed();
+				series.Processed();
 			}
 		}
 		
@@ -391,13 +391,13 @@ namespace Plot
 			double px = Math.Round(-d_xaxis.Min * scale.X);
 			double py = Math.Round(d_yaxis.Max * scale.Y);
 			
-			ctx.Translate(px - 0.5, py - 0.5);
+			ctx.Translate(px + 1.5, py + 0.5);
 		}
 		
-		private void SetGraphLine(Cairo.Context ctx, Container container)
+		private void SetGraphLine(Cairo.Context ctx, LineSeries series)
 		{
-			ctx.SetSourceRGB(container.Color.R, container.Color.G, container.Color.B);
-			ctx.LineWidth = 2;
+			ctx.SetSourceRGB(series.Color.R, series.Color.G, series.Color.B);
+			ctx.LineWidth = series.LineWidth;
 		}
 		
 		private void DrawTick(Cairo.Context ctx, double wh)
@@ -416,17 +416,17 @@ namespace Plot
 			ctx.Stroke();
 		}
 		
-		private void DrawXAxis(Cairo.Context ctx, Range<double> xaxis)
+		private void DrawXAxis(Cairo.Context ctx)
 		{
 			Point<double> scale = Scale;
 			
 			ctx.SetSourceRGBA(d_axisColor.R, d_axisColor.G, d_axisColor.B, d_axisColor.A);
 			ctx.LineWidth = 1;
 			
-			Console.WriteLine(scale.X);
+			Prepare(ctx);
 			
-			ctx.MoveTo(xaxis.Min * scale.X, 0);
-			ctx.LineTo(xaxis.Max * scale.X, 0);
+			ctx.MoveTo(d_xaxis.Min * scale.X, 0);
+			ctx.LineTo(d_xaxis.Max * scale.X, 0);
 
 			ctx.Stroke();
 			
@@ -491,11 +491,9 @@ namespace Plot
 				// draw the points we now need to draw, according to new shift
 				Prepare(ctx);
 				
-				DrawXAxis(ctx, xrange);
-				
-				foreach (Container container in d_data)
+				foreach (LineSeries series in d_data)
 				{
-					Render(ctx, container, xrange, d_data[0].Count - num - 4);
+					Render(ctx, series, xrange, d_data[0].Count - num - 4);
 				}
 				
 				ctx.Restore();
@@ -504,39 +502,22 @@ namespace Plot
 			EmitRequestRedraw();
 		}
 
-		private void Render(Cairo.Context ctx, Container container, Range<double> xrange, int idx)
+		private void Render(Cairo.Context ctx, LineSeries series, Range<double> xrange, int idx)
 		{
 			Point<double> scale = Scale;
-			SetGraphLine(ctx, container);
+			SetGraphLine(ctx, series);
 			
-			// Generate sites for samples in xrange
-			List<double> sites = new List<double>();
+			bool first = true;
 			
-			// Draw a point at every 2 pixels
-			double sw = 4 * SampleWidth();
-			double start = xrange.Min - (xrange.Min % sw);
-			
-			while (start <= xrange.Max + sw)
+			foreach (Point<double> item in series.Range(idx))
 			{
-				sites.Add(start);
-				start += sw;
-			}
+				double px = item.X * scale.X;
+				double py = item.Y * scale.Y;
 
-			double[] data = container.Sample(sites.ToArray(), idx);
-			
-			for (int i = 0; i < data.Length; ++i)
-			{
-				if (i != 0)
+				if (first)
 				{
-					Console.WriteLine(sites[i] + " :: " + (data[i] * scale.Y));
-				}
-				
-				double px = Math.Floor(sites[i] * scale.X);
-				double py = data[i] * scale.Y;
-
-				if (i == 0)
-				{
-					ctx.MoveTo(px, -py);
+					ctx.MoveTo(System.Math.Floor(px), -py);
+					first = false;
 				}
 				else
 				{
@@ -636,11 +617,10 @@ namespace Plot
 			using (Cairo.Context ctx = new Cairo.Context(buf))
 			{
 				Prepare(ctx);
-				DrawXAxis(ctx, d_xaxis);
 				
-				foreach (Container container in d_data)
+				foreach (LineSeries series in d_data)
 				{
-					Render(ctx, container, d_xaxis, 0);
+					Render(ctx, series, d_xaxis, 0);
 				}
 			}
 		}
@@ -651,9 +631,6 @@ namespace Plot
 			
 			ctx.LineWidth = 1;
 			ctx.SetSourceRGBA(d_axisColor.R, d_axisColor.G, d_axisColor.B, d_axisColor.A);
-			//ctx.MoveTo(cx, 0);
-			//ctx.LineTo(cx, Allocation.Height);
-			//ctx.Stroke();
 			
 			string ym = (((int)(d_yaxis.Max * 100)) / 100.0).ToString();
 			Cairo.TextExtents e = ctx.TextExtents(ym);
@@ -685,13 +662,18 @@ namespace Plot
 				return;
 			}
 			
-			Container container = d_data[d_ruleWhich];
+			TimeSeries series = d_data[d_ruleWhich] as TimeSeries;
+			
+			if (series == null)
+			{
+				return;
+			}
 
 			Point<double> scale = Scale;
 			Prepare(ctx);
 			
 			double pos = d_ruler.X / scale.X + d_xaxis.Min;
-			double[] val = container.Sample(new double[] {pos});
+			double[] val = series.Sample(new double[] {pos});
 
 			// First draw label
 			string s = val[0].ToString("F3");
@@ -743,12 +725,12 @@ namespace Plot
 			
 			List<string> labels = new List<string>();
 			
-			foreach (Container container in d_data)
+			foreach (LineSeries series in d_data)
 			{
-				if (!String.IsNullOrEmpty(container.Label))
+				if (!String.IsNullOrEmpty(series.Label))
 				{
-					string lbl = System.Security.SecurityElement.Escape(container.Label);
-					labels.Add("<span color='" + HexColor(container.Color) + "'>" + lbl + "</span>");
+					string lbl = System.Security.SecurityElement.Escape(series.Label);
+					labels.Add("<span color='" + HexColor(series.Color) + "'>" + lbl + "</span>");
 				}
 			}
 			
@@ -801,6 +783,10 @@ namespace Plot
 			// Paint axis
 			ctx.Save();
 			DrawYAxis(ctx);
+			ctx.Restore();
+			
+			ctx.Save();
+			DrawXAxis(ctx);
 			ctx.Restore();
 			
 			if (d_showRuler && d_hasRuler)

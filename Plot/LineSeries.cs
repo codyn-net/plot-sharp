@@ -3,22 +3,24 @@ using System.Collections.Generic;
 
 namespace Plot
 {
-	public class Container : IComparer<Point<double>>
+	public class LineSeries
 	{
 		private List<Point<double>> d_data;
 
 		private Color d_color;
 		private string d_label;
 		private int d_unprocessed;
+		private int d_lineWidth;
 		private Range<double> d_xrange;
 		private Range<double> d_yrange;
 		
 		public event EventHandler Changed = delegate {};
 		
-		public Container(IEnumerable<Point<double>> data, Color color, string label)
+		public LineSeries(IEnumerable<Point<double>> data, Color color, string label)
 		{
 			d_data = new List<Point<double>>(data);
 			d_label = label;
+			d_lineWidth = 1;
 			
 			d_unprocessed = 0;
 			
@@ -35,11 +37,23 @@ namespace Plot
 			Changed(this, new EventArgs());
 		}
 		
-		public Container(IEnumerable<Point<double>> data, Color color) : this(data, color, "")
+		public LineSeries(IEnumerable<Point<double>> data, Color color) : this(data, color, "")
 		{
 		}
 		
-		public Container(IEnumerable<Point<double>> data) : this(data, null, "")
+		public LineSeries(IEnumerable<Point<double>> data) : this(data, null, "")
+		{
+		}
+		
+		public LineSeries(Color color, string name) : this(new Point<double>[] {}, color, "")
+		{
+		}
+		
+		public LineSeries(string name) : this(null, "")
+		{
+		}
+		
+		public LineSeries() : this("")
 		{
 		}
 		
@@ -86,6 +100,19 @@ namespace Plot
 			}
 		}
 		
+		public int LineWidth
+		{
+			get
+			{
+				return d_lineWidth;
+			}
+			set
+			{
+				d_lineWidth = value;
+				Changed(this, new EventArgs());
+			}
+		}
+		
 		public Range<double> YRange
 		{
 			get
@@ -106,6 +133,22 @@ namespace Plot
 				d_data.AddRange(value);
 				
 				Changed(this, new EventArgs());
+			}
+		}
+		
+		public IEnumerable<Point<double>> Range(int start)
+		{
+			return Range(start, d_data.Count - start);
+		}
+		
+		public IEnumerable<Point<double>> Range(int start, int length)
+		{
+			int end = Math.Min(start + length, d_data.Count);
+			start = Math.Max(start, 0);
+
+			for (int i = start; i < end; ++i)
+			{
+				yield return d_data[i];
 			}
 		}
 		
@@ -146,6 +189,14 @@ namespace Plot
 						d_color.Update(value);
 					}
 				}
+			}
+		}
+		
+		protected List<Point<double>> PrivateData
+		{
+			get
+			{
+				return d_data;
 			}
 		}
 		
@@ -200,7 +251,7 @@ namespace Plot
 					idx = d_data.Count + idx;
 				}
 				
-				if (idx >= d_data.Count)
+				if (idx < 0 || idx >= d_data.Count)
 				{
 					return new Point<double>();
 				}
@@ -209,54 +260,6 @@ namespace Plot
 					return d_data[idx];
 				}
 			}
-		}
-		
-		public int Compare(Point<double> a, Point<double> b)
-		{
-			return a.X < b.X ? -1 : (a.X > b.X ? 1 : 0);
-		}
-		
-		public double[] Sample(double[] sites, int fidx)
-		{
-			double[] ret = new double[sites.Length];
-			
-			if (d_data.Count == 0)
-			{
-				return ret;
-			}
-			
-			for (int i = 0; i < sites.Length; ++i)
-			{
-				int idx = d_data.BinarySearch(fidx, d_data.Count - fidx, new Point<double>(sites[i], 0), this);
-				
-				if (idx < 0)
-				{
-					idx = ~idx;
-				}
-				
-				fidx = idx > 0 ? idx - 1 : 0;
-				int sidx = idx < d_data.Count ? idx : d_data.Count - 1;
-				
-				if (fidx >= d_data.Count || sidx >= d_data.Count)
-				{
-					ret[i] = d_data[d_data.Count - 1].Y;
-				}
-				else
-				{
-					Point<double> ps = d_data[sidx];
-					Point<double> pf = d_data[fidx];
-
-					double factor = ps.X == pf.X ? 1 : (ps.X - sites[i]) / (ps.X - pf.X);
-					ret[i] = pf.Y * factor + (ps.Y * (1 - factor));
-				}
-			}
-			
-			return ret;
-		}
-		
-		public double[] Sample(double[] sites)
-		{
-			return Sample(sites, 0);
 		}
 	}
 }
