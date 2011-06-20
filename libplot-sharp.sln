@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "libplot-sharp", "libplot-sharp.csproj", "{4782FF65-90BC-4738-B640-1C2B034F39B7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{AAA2791E-2FE4-4B45-B27C-FEFE28C94BB9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4782FF65-90BC-4738-B640-1C2B034F39B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4782FF65-90BC-4738-B640-1C2B034F39B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4782FF65-90BC-4738-B640-1C2B034F39B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4782FF65-90BC-4738-B640-1C2B034F39B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AAA2791E-2FE4-4B45-B27C-FEFE28C94BB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AAA2791E-2FE4-4B45-B27C-FEFE28C94BB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AAA2791E-2FE4-4B45-B27C-FEFE28C94BB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AAA2791E-2FE4-4B45-B27C-FEFE28C94BB9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = test\test.csproj
+	EndGlobalSection
+EndGlobal
