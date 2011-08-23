@@ -12,27 +12,16 @@ namespace test
 		{
 			Gtk.Application.Init("test", ref args);
 			Gtk.Window window = new Gtk.Window("Test");
+			Gtk.WindowGroup grp = new Gtk.WindowGroup();
+			grp.AddWindow(window);
 			
 			window.SetDefaultSize(400, 300);
-			Gtk.DrawingArea area = new Gtk.DrawingArea();
+			Plot.Widget area = new Plot.Widget();
 			
-			d_graph = new Plot.Graph();
+			d_graph = area.Graph;
 
-			d_graph.RequestSurface += delegate(object source, Plot.RequestSurfaceArgs a) {
-				using (Cairo.Context ctx = Gdk.CairoHelper.Create(area.GdkWindow))
-				{
-					a.Surface = ctx.Target.CreateSimilar(ctx.Target.Content, a.Width, a.Height);
-				}
-			};
-			
-			d_graph.RequestRedraw += delegate {
-				area.QueueDraw();
-			};
-
-			area.SizeAllocated += delegate(object o, Gtk.SizeAllocatedArgs a) {
-				Console.WriteLine(a.Allocation.Width);		
-				d_graph.Dimensions.Resize(a.Allocation.Width, a.Allocation.Height);
-			};
+			d_graph.AxisAspect = 1;
+			d_graph.KeepAspect = true;
 
 			window.Add(area);
 			
@@ -40,32 +29,43 @@ namespace test
 			window.DeleteEvent += delegate {
 				Gtk.Application.Quit();
 			};
-			
-			area.ExposeEvent += HandleAreaExposeEvent;
-			
+
 			d_i = 0;
 
-			Plot.LineSeries series = new Plot.LineSeries("test");
-			d_graph.Add(series);
+			Plot.Series.Point s1 = new Plot.Series.Point("test 1");
+			s1.Size = 5;
+			s1.ShowLines = true;
+
+			Plot.Series.Line s2 = new Plot.Series.Line("test 2");
+		
+			d_graph.ShowRuler = true;
+
+			d_graph.Add(s1);
+			d_graph.Add(s2);
 			
-			GLib.Timeout.Add(10, delegate {
-				double x = (++d_i / (double)100) % 1;
-				
-				series.Append(new Plot.Point<double>(Math.Cos(x * Math.PI * 2), Math.Sin(x * Math.PI * 2)));
-				d_graph.ProcessAppend();
+			List<Plot.Point<double>> d1 = new List<Plot.Point<double>>();
+			List<Plot.Point<double>> d2 = new List<Plot.Point<double>>();
 
-				return true;
-			});
-
-			Gtk.Application.Run();
-		}
-
-		static void HandleAreaExposeEvent(object o, Gtk.ExposeEventArgs args)
-		{
-			using (Cairo.Context ctx = Gdk.CairoHelper.Create(args.Event.Window))
+			int samplesize = 1000;
+			
+			//GLib.Timeout.Add(10, delegate {
+			for (int i = 0; i <= samplesize; ++i)
 			{
-				d_graph.Draw(ctx);
+				d_i = i;
+
+				double x = d_i++ / (double)samplesize;
+				
+				Plot.Point<double> pt1 = new Plot.Point<double>(x, Math.Sin(x * Math.PI * 2));
+				Plot.Point<double> pt2 = new Plot.Point<double>(x, Math.Cos(x * Math.PI * 2));
+				
+				d1.Add(pt1);
+				d2.Add(pt2);
 			}
+				
+			s1.Data = d1;
+			s2.Data = d2;
+			
+			Gtk.Application.Run();
 		}
 	}
 }

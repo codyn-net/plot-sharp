@@ -3,12 +3,10 @@ using System.Collections.Generic;
 
 namespace Plot
 {
-	public class Range<T> where T : struct
+	public class Range<T> : Changeable where T : struct
 	{
 		private T d_min;
 		private T d_max;
-		
-		public event EventHandler Changed = delegate {};
 		
 		public Range(T min, T max)
 		{
@@ -42,7 +40,7 @@ namespace Plot
 				{
 					d_max = value;
 					
-					Changed(this, new EventArgs());
+					EmitChanged();
 				}
 			}
 		}
@@ -59,9 +57,14 @@ namespace Plot
 				{
 					d_min = value;
 					
-					Changed(this, new EventArgs());
+					EmitChanged();
 				}
 			}
+		}
+		
+		public void Update(Range<T> other)
+		{
+			Update(other.Min, other.Max);
 		}
 		
 		public void Update(T min, T max)
@@ -74,7 +77,12 @@ namespace Plot
 			d_min = min;
 			d_max = max;
 			
-			Changed(this, new EventArgs());
+			EmitChanged();
+		}
+		
+		public override string ToString()
+		{
+			return String.Format("[{0}, {1}]", d_min, d_max);
 		}
 	}
 }

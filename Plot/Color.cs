@@ -2,14 +2,12 @@ using System;
 
 namespace Plot
 {
-	public class Color
+	public class Color : Changeable
 	{
 		private double d_r;
 		private double d_g;
 		private double d_b;
 		private double d_a;
-		
-		public event EventHandler Changed = delegate {};
 		
 		public Color(string html)
 		{
@@ -71,7 +69,7 @@ namespace Plot
 		{
 			if (UpdateValue(ref field, val))
 			{
-				Changed(this, new EventArgs());
+				EmitChanged();
 			}
 		}
 		
@@ -131,8 +129,13 @@ namespace Plot
 			
 			if (changed)
 			{
-				Changed(this, new EventArgs());
+				EmitChanged();
 			}
+		}
+		
+		public void Set(Cairo.Context ctx)
+		{
+			ctx.SetSourceRGBA(d_r, d_g, d_b, d_a);
 		}
 	}
 }

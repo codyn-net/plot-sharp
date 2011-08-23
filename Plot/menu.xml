@@ -1,0 +1,13 @@
+<ui>
+  <popup>
+    <menuitem name="ShowRuler" action="ActionShowRuler" />
+    <menuitem name="ShowTicks" action="ActionShowTicks" />
+    <menuitem name="ShowTickLabels" action="ActionShowTickLabels" />
+    <menuitem name="ShowGrid" action="ActionShowGrid" />
+	<separator/>
+	<menuitem name="KeepAspect" action="ActionKeepAspect" />
+	<menuitem name="AutoAxis" action="ActionAutoAxis" />
+	<separator/>
+    <placeholder name="Additions" />
+   </popup>
+</ui>

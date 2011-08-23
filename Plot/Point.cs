@@ -3,13 +3,11 @@ using System.Collections.Generic;
 
 namespace Plot
 {
-	public class Point<T> : IComparable<Point<T>> where T : struct, IComparable
+	public class Point<T> : Changeable, IComparable<Point<T>> where T : struct, IComparable
 	{
 		private T d_x;
 		private T d_y;
 		
-		public event EventHandler Moved = delegate {};
-
 		public Point(T x, T y)
 		{
 			d_x = x;
@@ -47,7 +45,7 @@ namespace Plot
 				{
 					d_x = value;
 					
-					Moved(this, new EventArgs());
+					EmitChanged();
 				}
 			}
 		}
@@ -64,12 +62,12 @@ namespace Plot
 				{
 					d_y = value;
 					
-					Moved(this, new EventArgs());
+					EmitChanged();
 				}
 			}
 		}
 		
-		void Move(T x, T y)
+		public void Move(T x, T y)
 		{
 			if (Eq(d_x, x) && Eq(d_y, y))
 			{
@@ -79,7 +77,22 @@ namespace Plot
 			d_x = x;
 			d_y = y;
 			
-			Moved(this, new EventArgs());
+			EmitChanged();
+		}
+		
+		public T this[int idx]
+		{
+			get
+			{
+				if (idx == 0)
+				{
+					return d_x;
+				}
+				else
+				{
+					return d_y;
+				}
+			}
 		}
 	}
 }

@@ -31,9 +31,17 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="Mono.Cairo" />
     <Reference Include="System.Core" />
-    <Reference Include="pango-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f" />
+    <Reference Include="pango-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
+      <Package>gtk-sharp-2.0</Package>
+    </Reference>
+    <Reference Include="Mono.Cairo, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756" />
+    <Reference Include="gtk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
+      <Package>gtk-sharp-2.0</Package>
+    </Reference>
+    <Reference Include="gdk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
+      <Package>gtk-sharp-2.0</Package>
+    </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -47,7 +55,33 @@
     <Compile Include="Plot\RequestSurfaceHandler.cs" />
     <Compile Include="Plot\Ticks.cs" />
     <Compile Include="Plot\Directories.cs" />
-    <Compile Include="Plot\LineSeries.cs" />
-    <Compile Include="Plot\TimeSeries.cs" />
+    <Compile Include="Plot\Changeable.cs" />
+    <Compile Include="Plot\AxisMode.cs" />
+    <Compile Include="Plot\Alignment.cs" />
+    <Compile Include="Plot\SortedList.cs" />
+    <Compile Include="Plot.Series\Vector.cs" />
+    <Compile Include="Plot.Series\Point.cs" />
+    <Compile Include="Plot.Series\Line.cs" />
+    <Compile Include="Plot\Widget.cs" />
+    <Compile Include="Plot\ColorFgBg.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Plot.Series\" />
+    <Folder Include="Plot\" />
+    <Folder Include="Plot\" />
+    <Folder Include="Plot\" />
+    <Folder Include="Plot\" />
+    <Folder Include="Plot\" />
+    <Folder Include="Plot\" />
+    <Folder Include="Plot\" />
+    <Folder Include="Plot\" />
+    <Folder Include="Plot\" />
+    <Folder Include="Plot\" />
+    <Folder Include="Plot\" />
+    <Folder Include="Plot\" />
+    <Folder Include="Plot\" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Plot\menu.xml" />
   </ItemGroup>
 </Project>

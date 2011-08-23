@@ -7,20 +7,36 @@ namespace Plot
 	public class Graph : IDisposable
 	{		
 		private bool d_showRuler;
-		private List<LineSeries> d_data;
+		private bool d_showLabels;
+		private bool d_showGrid;
+		private bool d_showRangeLabels;
+
+		private List<Series.Line> d_data;
 		
+		// Axis
 		private Range<double> d_xaxis;
+		private AxisMode d_xaxisMode;
+
 		private Range<double> d_yaxis;
+		private AxisMode d_yaxisMode;
+		
+		private Range<double> d_dataXRange;
+		private Range<double> d_dataYRange;
+		
+		private double d_axisAspect;
+		private bool d_keepAxisAspect;
 
 		private Cairo.Surface[] d_backbuffer;
 		private int d_currentBuffer;
-		private Point<int> d_ruler;
-		private Ticks d_ticks;
+		private Point<double> d_ruler;
+		private List<Ticks> d_xticks;
+		private List<Ticks> d_yticks;
 		private bool d_recreate;
-
+		private bool d_checkingAspect;
+		
 		// User configurable
 		private int d_ruleWhich;
-		private bool d_hasRuler;
+
 		private Rectangle<int> d_dimensions;
 		
 		// Appearance
@@ -28,10 +44,16 @@ namespace Plot
 
 		// Colors		
 		private Color d_backgroundColor;
+
 		private Color d_axisColor;
+		private ColorFgBg d_axisLabelColors;
+
+		private Color d_rulerColor;
+		private ColorFgBg d_rulerLabelColors;
 		
 		private static Color[] s_colors;
 		private static int s_colorIndex;
+		private bool d_antialias;
 		
 		public event RequestSurfaceHandler RequestSurface = delegate {};
 		public event EventHandler RequestRedraw = delegate {};
@@ -71,21 +93,115 @@ namespace Plot
 			return ret;
 		}
 		
+		public bool KeepAspect
+		{
+			get
+			{
+				return d_keepAxisAspect;
+			}
+			set
+			{
+				if (value != d_keepAxisAspect)
+				{
+					d_keepAxisAspect = value;
+					CheckAspect();
+				}
+			}
+		}
+		
+		public bool Antialias
+		{
+			get
+			{
+				return d_antialias;
+			}
+			set
+			{
+				if (d_antialias != value)
+				{
+					d_antialias = value;
+					d_recreate = true;
+					
+					EmitRequestRedraw();
+				}
+			}
+		}
+		
+		public bool ShowLabels
+		{
+			get
+			{
+				return d_showLabels;
+			}
+			set
+			{
+				if (d_showLabels != value)
+				{
+					d_showLabels = value;
+					EmitRequestRedraw();
+				}
+			}
+		}
+		
+		public bool ShowRangeLabels
+		{
+			get
+			{
+				return d_showRangeLabels;
+			}
+			set
+			{
+				if (d_showRangeLabels != value)
+				{
+					d_showRangeLabels = value;
+					EmitRequestRedraw();
+				}
+			}
+		}
+		
 		public Graph(Range<double> xaxis, Range<double> yaxis)
 		{
 			d_showRuler = true;
-			d_data = new List<LineSeries>();
+			d_data = new List<Series.Line>();
 			
 			d_xaxis = xaxis;
 			d_yaxis = yaxis;
 			
+			d_dataXRange = new Range<double>(0, 0);
+			d_dataYRange = new Range<double>(0, 0);
+			
+			d_xticks = new List<Ticks>();
+			d_yticks = new List<Ticks>();
+			
+			d_showGrid = false;
+			d_showLabels = true;
+
+			d_antialias = true;
+			
+			AddXTicks(new Ticks());
+			AddYTicks(new Ticks());
+			
+			d_xaxisMode = AxisMode.Auto;
+			d_yaxisMode = AxisMode.Auto;
+			
+			d_axisAspect = 1;
+			d_keepAxisAspect = false;
+			
 			d_xaxis.Changed += delegate {
 				d_recreate = true;
+				
+				CheckAspect();
+				
+				UpdateXTicks();
 				EmitRequestRedraw();
 			};
 			
 			d_yaxis.Changed += delegate {
 				d_recreate = true;
+				
+				CheckAspect();
+				
+				UpdateYTicks();
 				EmitRequestRedraw();
 			};
 
@@ -93,10 +209,20 @@ namespace Plot
 			
 			d_dimensions.Resized += delegate {
 				d_recreate = true;
+
+				RemoveBuffer(d_backbuffer, 0);
+				RemoveBuffer(d_backbuffer, 1);
+				
+				UpdateXTicks();
+				UpdateYTicks();
+
 				EmitRequestRedraw();
 			};
 			
 			d_dimensions.Moved += delegate {
+				UpdateXTicks();
+				UpdateYTicks();
+
 				EmitRequestRedraw();
 			};
 			
@@ -107,15 +233,18 @@ namespace Plot
 			d_ruleWhich = 0;
 
 			d_backgroundColor = new Color(1, 1, 1);
+			
 			d_axisColor = new Color(0, 0, 0);
+			d_axisLabelColors = new ColorFgBg();
 			
-			d_backgroundColor.Changed += delegate {
-				Redraw();
-			};
+			d_rulerColor = new Color(0.5, 0.5, 0.5, 1);
+			d_rulerLabelColors = new ColorFgBg();
 			
-			d_axisColor.Changed += delegate {
-				EmitRequestRedraw();
-			};
+			d_backgroundColor.Changed += RedrawWhenChanged;
+			d_axisColor.Changed += RedrawWhenChanged;
+			d_axisLabelColors.Changed += RedrawWhenChanged;
+			d_rulerColor.Changed += RedrawWhenChanged;
+			d_rulerLabelColors.Changed += RedrawWhenChanged;
 		}
 		
 		public Graph() : this(new Range<double>(-1, 1), new Range<double>(1, -1))
@@ -136,9 +265,28 @@ namespace Plot
 			}
 			set
 			{
-				d_font = value;
+				if (d_font != value)
+				{
+					d_font = value;
 
-				EmitRequestRedraw();
+					EmitRequestRedraw();
+				}
+			}
+		}
+		
+		public bool ShowGrid
+		{
+			get
+			{
+				return d_showGrid;
+			}
+			set
+			{
+				if (d_showGrid != value)
+				{
+					d_showGrid = value;
+					EmitRequestRedraw();
+				}
 			}
 		}
 		
@@ -155,6 +303,30 @@ namespace Plot
 			get
 			{
 				return d_axisColor;
+			}
+		}
+		
+		public ColorFgBg AxisLabelColors
+		{
+			get
+			{
+				return d_axisLabelColors;
+			}
+		}
+		
+		public Color RulerColor
+		{
+			get
+			{
+				return d_rulerColor;
+			}
+		}
+		
+		public ColorFgBg RulerLabelColors
+		{
+			get
+			{
+				return d_rulerLabelColors;
 			}
 		}
 		
@@ -184,7 +356,12 @@ namespace Plot
 			RequestRedraw(this, new EventArgs());
 		}
 		
-		public Point<int> Ruler
+		private void RedrawWhenChanged(object source, EventArgs args)
+		{
+			EmitRequestRedraw();
+		}
+		
+		public Point<double> Ruler
 		{
 			get
 			{
@@ -192,23 +369,22 @@ namespace Plot
 			}
 			set
 			{
-				d_ruler = value;
-				d_hasRuler = true;
+				if (d_ruler != value)
+				{
+					if (d_ruler != null)
+					{
+						d_ruler.Changed -= RedrawWhenChanged;
+					}
 
-				EmitRequestRedraw();
-			}
-		}
-		
-		public bool HasRuler
-		{
-			get
-			{
-				return d_hasRuler;
-			}
-			set
-			{
-				d_hasRuler = value;
-				EmitRequestRedraw();
+					d_ruler = value;
+					
+					if (d_ruler != null)
+					{
+						d_ruler.Changed += RedrawWhenChanged;
+					}
+
+					EmitRequestRedraw();
+				}
 			}
 		}
 		
@@ -220,11 +396,27 @@ namespace Plot
 			}
 		}
 		
-		public LineSeries[] Plots
+		public Series.Line[] Series
 		{
 			get
 			{
 				return d_data.ToArray();
+			}
+		}
+		
+		public Range<double> DataXRange
+		{
+			get
+			{
+				return d_dataXRange;
+			}
+		}
+		
+		public Range<double> DataYRange
+		{
+			get
+			{
+				return d_dataYRange;
 			}
 		}
 		
@@ -236,6 +428,14 @@ namespace Plot
 			}
 		}
 		
+		public AxisMode YAxisMode
+		{
+			get
+			{
+				return d_yaxisMode;
+			}
+		}
+		
 		public Range<double> XAxis
 		{
 			get
@@ -244,56 +444,85 @@ namespace Plot
 			}
 		}
 		
-		public void AutoAxis()
+		public AxisMode XAxisMode
 		{
-			Range<double> range = new Range<double>(-3 , 3);
-			
-			bool isset = false;
-			
-			foreach (LineSeries cont in d_data)
+			get
 			{
-				Point<double> min = cont.Data.Min();
-				Point<double> max = cont.Data.Max();
-				
-				if (!isset || min.X < range.Min)
-				{
-					range.Min = min.X;
-				}
-				
-				if (!isset || max.X > range.Max)
-				{
-					range.Max = max.X;
-				}
-				
-				isset = true;
-			}
-			
-			double dist = range.Span() / 2;
-			d_yaxis.Update(range.Min - dist * 0.2, range.Max + dist * 0.2);
-						
-			Redraw();
-		}
-		
-		public void SetTicks(double width, double start)
-		{
-			// width is the number of pixels per tick unit
-			// start is the tick unit value from the left
-			if (width == 0)
-			{
-				d_ticks = null;
-			}
-			else
-			{
-				d_ticks = new Ticks(start, width);
+				return d_xaxisMode;
 			}
 		}
 		
-		public void SetTicks(int width)
+		public double AxisAspect
 		{
-			SetTicks(width, 0);
+			get
+			{
+				return d_axisAspect;
+			}
+			set
+			{
+				if (d_axisAspect != value)
+				{
+					d_axisAspect = value;
+					CheckAspect();
+				}
+			}
+		}
+		
+		private void OnXTicksChanged(object source, EventArgs args)
+		{
+			((Ticks)source).Update(d_xaxis, d_dimensions.Width);
+			EmitRequestRedraw();
+		}
+		
+		private void OnYTicksChanged(object source, EventArgs args)
+		{
+			((Ticks)source).Update(d_yaxis, d_dimensions.Height);
+			EmitRequestRedraw();
+		}
+		
+		public IEnumerable<Ticks> XTicks
+		{
+			get
+			{
+				return d_xticks;
+			}
+		}
+		
+		public IEnumerable<Ticks> YTicks
+		{
+			get
+			{
+				return d_yticks;
+			}
+		}
+		
+		public void AddXTicks(Ticks ticks)
+		{
+			d_xticks.Add(ticks);
+			
+			ticks.Changed += OnXTicksChanged;
+		}
+		
+		public void RemoveXTicks(Ticks ticks)
+		{
+			ticks.Changed -= OnXTicksChanged;
+			d_xticks.Remove(ticks);
+		}
+		
+		public void AddYTicks(Ticks ticks)
+		{
+			d_yticks.Add(ticks);
+			
+			ticks.Changed += OnYTicksChanged;
+		}
+		
+		public void RemoveYTicks(Ticks ticks)
+		{
+			ticks.Changed -= OnYTicksChanged;
+			d_yticks.Remove(ticks);
 		}
 
-		public void Add(LineSeries series)
+		public void Add(Series.Line series)
 		{
 			if (series.Color == null)
 			{
@@ -308,16 +537,154 @@ namespace Plot
 			}
 			
 			series.Changed += HandleLineSeriesChanged;
+			series.XRange.Changed += HandleSeriesXRangeChanged;
+			series.YRange.Changed += HandleSeriesYRangeChanged;
+			
+			HandleSeriesXRangeChanged(series.XRange, new EventArgs());
+			HandleSeriesYRangeChanged(series.YRange, new EventArgs());
 			
 			Redraw();
+		}
+		
+		private void UpdateXTicks()
+		{
+			foreach (Ticks ticks in d_xticks)
+			{
+				ticks.Update(d_xaxis, d_dimensions.Width);
+			}
+		}
+		
+		private void UpdateYTicks()
+		{
+			foreach (Ticks ticks in d_yticks)
+			{
+				ticks.Update(d_yaxis, d_dimensions.Height);
+			}
+		}
+		
+		private void CheckAspect()
+		{
+			if (!d_keepAxisAspect || d_checkingAspect)
+			{
+				return;
+			}
+			
+			d_checkingAspect = true;
+			
+			// Update the viewport (xaxis, yaxis) according to the aspect ratio
+			double aspect = d_yaxis.Span() / d_xaxis.Span();
+			
+			if (aspect < d_axisAspect)
+			{
+				// Yaxis should increase
+				d_yaxis.Expand(d_xaxis.Span() * d_axisAspect - d_yaxis.Span());
+			}
+			else if (aspect > d_axisAspect)
+			{
+				// XAxis should increase
+				d_xaxis.Expand(d_yaxis.Span() / d_axisAspect - d_xaxis.Span());
+			}
+			
+			d_checkingAspect = false;
+		}
+		
+		private delegate Range<double> SelectRange(Series.Line series);
+
+		private void UpdateAxis(Range<double> range, AxisMode mode, Range<double> mine, Range<double> datarange, SelectRange selector)
+		{
+			mine.Freeze();
+			datarange.Freeze();
+
+			if (mode == AxisMode.AutoGrow)
+			{
+				// Simply only grow the ranges
+				UpdateRange(range, mine);
+			}
+			else
+			{
+				Range<double> maxit = new Range<double>();
+				bool first = true;
+
+				foreach (Series.Line series in d_data)
+				{
+					Range<double> r = selector(series);
+					
+					if (first || r.Max > maxit.Max)
+					{
+						maxit.Max = r.Max;
+					}
+					
+					if (first || r.Min < maxit.Min)
+					{
+						maxit.Min = r.Min;
+					}
+					
+					first = false;
+				}
+				
+				mine.Update(maxit);
+			}
+			
+			CheckAspect();
+			
+			UpdateRange(range, datarange);
+
+			mine.Thaw();
+			datarange.Thaw();
+		}
+		
+		private void UpdateRange(Range<double> range, Range<double> mine)
+		{
+			if (range.Max > mine.Max)
+			{
+				mine.Max = range.Max;
+			}
+			
+			if (range.Min < mine.Min)
+			{
+				mine.Min = range.Min;
+			}
+		}
+
+		private void HandleSeriesXRangeChanged(object sender, EventArgs e)
+		{
+			Range<double> r = (Range<double>)sender;
+			
+			if (d_xaxisMode != AxisMode.Fixed)
+			{
+				UpdateAxis(r, d_xaxisMode, d_xaxis, d_dataXRange, a => a.XRange);
+			}
+			else
+			{
+				UpdateRange(r, d_dataXRange);
+			}
+		}
+		
+		private void HandleSeriesYRangeChanged(object sender, EventArgs e)
+		{
+			Range<double> r = (Range<double>)sender;
+			
+			if (d_yaxisMode != AxisMode.Fixed)
+			{
+				UpdateAxis(r, d_yaxisMode, d_yaxis, d_dataYRange, a => a.YRange);
+			}
+			else
+			{
+				UpdateRange(r, d_dataYRange);
+			}
 		}
 
 		private void HandleLineSeriesChanged(object sender, EventArgs e)
 		{
+			Series.Line series = (Series.Line)sender;
+
+			HandleSeriesXRangeChanged(series.XRange, new EventArgs());
+			HandleSeriesYRangeChanged(series.YRange, new EventArgs());
+
 			Redraw();
 		}
 		
-		public void Remove(LineSeries series)
+		public void Remove(Series.Line series)
 		{
 			if (!d_data.Contains(series))
 			{
@@ -325,6 +692,8 @@ namespace Plot
 			}
 
 			series.Changed -= HandleLineSeriesChanged;
+			series.XRange.Changed -= HandleSeriesXRangeChanged;
+			series.YRange.Changed -= HandleSeriesYRangeChanged;
 			
 			d_data.Remove(series);
 			
@@ -340,14 +709,14 @@ namespace Plot
 		{
 			get
 			{
-				return new Point<double>((double)((d_dimensions.Width - 2) / d_xaxis.Span()),
-				                         (double)((d_dimensions.Height - 2) / d_yaxis.Span()));
+				return new Point<double>(d_dimensions.Width / d_xaxis.Span(),
+				                         d_dimensions.Height / d_yaxis.Span());
 			}
 		}
 
 		public void ProcessAppend()
 		{
-			LineSeries maxunp = d_data.Aggregate(delegate (LineSeries a, LineSeries b) {
+			Series.Line maxunp = d_data.Aggregate(delegate (Series.Line a, Series.Line b) {
 				if (a.Unprocessed > b.Unprocessed)
 				{
 					return a;
@@ -365,7 +734,7 @@ namespace Plot
 			
 			int m = maxunp.Unprocessed;
 						
-			foreach (LineSeries series in d_data)
+			foreach (Series.Line series in d_data)
 			{
 				Point<double> last = series[-1];
 				int missing = m - series.Unprocessed;
@@ -378,26 +747,29 @@ namespace Plot
 			
 			RedrawUnprocessed(m);
 			
-			foreach (LineSeries series in d_data)
+			foreach (Series.Line series in d_data)
 			{
 				series.Processed();
 			}
 		}
 		
-		private void Prepare(Cairo.Context ctx)
+		private Point<double> AxisTransform
 		{
-			Point<double> scale = Scale;
-			
-			double px = Math.Round(-d_xaxis.Min * scale.X);
-			double py = Math.Round(d_yaxis.Max * scale.Y);
-			
-			ctx.Translate(px + 1.5, py + 0.5);
+			get
+			{
+				Point<double> scale = Scale;
+				
+				return new Point<double>(-d_xaxis.Min * scale.X,
+				                         -d_yaxis.Max * scale.Y);
+			}
 		}
 		
-		private void SetGraphLine(Cairo.Context ctx, LineSeries series)
+		private void Prepare(Cairo.Context ctx)
 		{
-			ctx.SetSourceRGB(series.Color.R, series.Color.G, series.Color.B);
-			ctx.LineWidth = series.LineWidth;
+			Point<double> tr = AxisTransform;
+			
+			ctx.Scale(1, -1);
+			ctx.Translate(RoundInBase(tr.X, 0.5), RoundInBase(tr.Y, 0.5));
 		}
 		
 		private void DrawTick(Cairo.Context ctx, double wh)
@@ -416,27 +788,333 @@ namespace Plot
 			ctx.Stroke();
 		}
 		
-		private void DrawXAxis(Cairo.Context ctx)
+		private void DrawAxisNumber(Cairo.Context ctx, double num, double x, double y, int margin, int padding, Alignment xalign, Alignment yalign, ColorFgBg colors, bool realignx, bool realigny)
+		{
+			DrawAxisNumber(ctx, num.ToString("0.000"), x, y, margin, padding, xalign, yalign, colors, realignx, realigny);	
+		}
+		
+		private void DrawAxisNumber(Cairo.Context ctx, double num, double x, double y, int margin, int padding, Alignment xalign, Alignment yalign, ColorFgBg colors)
+		{
+			DrawAxisNumber(ctx, num.ToString("0.000"), x, y, margin, padding, xalign, yalign, colors, true, true);
+		}
+		
+		private void DrawAxisNumber(Cairo.Context ctx, string num, double x, double y, int margin, int padding, Alignment xalign, Alignment yalign, ColorFgBg colors)
+		{
+			DrawAxisNumber(ctx, num, x, y, margin, padding, xalign, yalign, colors, true, true);	
+		}
+		
+		private void DrawAxisNumber(Cairo.Context ctx, string num, double x, double y, int margin, int padding, Alignment xalign, Alignment yalign, ColorFgBg colors, bool realignx, bool realigny)
+		{
+			using (Pango.Layout layout = Pango.CairoHelper.CreateLayout(ctx))
+			{
+				layout.SetText(num);
+				
+				if (d_font != null)
+				{
+					layout.FontDescription = d_font.Copy();
+					layout.FontDescription.Size = (int)(d_font.Size * 0.75);
+				}
+				
+				int width, height;
+				
+				Pango.Rectangle inkrect;
+				Pango.Rectangle logrect;
+				
+				layout.GetPixelExtents(out inkrect, out logrect);
+
+				width = logrect.Width;
+				height = logrect.Height;
+
+				double x0;
+				double y0;
+				
+				if (xalign == Alignment.Center)
+				{
+					x0 = x - width / 2 - padding;
+				}
+				else if (xalign == Alignment.Right)
+				{
+					x0 = x - margin - width - 2 * padding;
+				}
+				else
+				{
+					x0 = x + margin;
+				}
+				
+				if (yalign == Alignment.Center)
+				{
+					y0 = y - height / 2 - padding;
+				}
+				else if (yalign == Alignment.Bottom)
+				{
+					y0 = y - margin - height;
+				}
+				else
+				{
+					y0 = y + margin;
+				}
+				
+				if (realignx)
+				{
+					if (x0 < margin)
+					{
+						x0 = margin;
+					}
+					
+					if (x0 + 2 * padding + width + margin > d_dimensions.Width)
+					{
+						x0 = d_dimensions.Width - margin - width - 2 * padding;
+					}
+				}
+				
+				if (realigny)
+				{			
+					if (y0 < margin)
+					{
+						y0 = margin;
+					}
+				
+					if (y0 + 2 * padding + height + margin > d_dimensions.Height)
+					{
+						y0 = d_dimensions.Height - margin - height - 2 * padding;
+					}
+				}
+				
+				ctx.Save();
+				
+				ctx.Rectangle(x0, y0, width + 2 * padding, height + 2 * padding);
+				colors.Bg.Set(ctx);
+				ctx.Fill();
+	
+				colors.Fg.Set(ctx);
+				ctx.MoveTo(x0 + padding, y0 + padding);
+					
+				Pango.CairoHelper.ShowLayout(ctx, layout);
+				ctx.NewPath();
+	
+				ctx.Restore();
+			}
+		}
+		
+		private double RoundInBase(double r, double b)
+		{
+			if (r % 1 == 0)
+			{
+				return r - Math.Sign(r) * 0.5;
+			}
+
+			return Math.Round(r - b) + b;
+		}
+		
+		private delegate void TicksRenderer(double coord, double v);
+		
+		public Point<double> AxisToPixel(Point<double> p)
 		{
 			Point<double> scale = Scale;
+			Point<double> tr = AxisTransform;
 			
-			ctx.SetSourceRGBA(d_axisColor.R, d_axisColor.G, d_axisColor.B, d_axisColor.A);
+			return new Point<double>(tr.X + p.X * scale.X, tr.Y + p.Y * scale.Y);
+		}
+		
+		private void DrawTicks(Cairo.Context ctx, Ticks ticks, int i, TicksRenderer renderer)
+		{
+			Point<double> scale = Scale;
+			Point<double> tr = AxisTransform;
+			
+			foreach (double p in ticks)
+			{
+				double o = RoundInBase(tr[i] + p * scale[i], 0.5);
+
+				renderer(o, p);
+			}
+		}
+		
+		private void DrawXTicks(Cairo.Context ctx, Ticks ticks, double y, double ylbl)
+		{
+			y -= ticks.Length / 2;
+
+			DrawTicks(ctx, ticks, 0, delegate (double x, double v) {
+				if (ticks.Visible)
+				{
+					if (d_showGrid)
+					{
+						ctx.MoveTo(x, 0);
+						ctx.RelLineTo(0, d_dimensions.Height);
+					}
+					else
+					{
+						ctx.MoveTo(x, y);
+						ctx.RelLineTo(0, ticks.Length);
+					}
+	
+					ctx.Stroke();
+				}
+				
+				if (ticks.ShowLabels && v != 0)
+				{
+					DrawAxisNumber(ctx,
+					               v.ToString(String.Format("F{0}", ticks.CalculatedTickDecimals)),
+					               x,
+					               ylbl,
+					               2,
+					               2,
+					               Alignment.Center,
+					               Alignment.Top,
+					               d_axisLabelColors,
+					               false,
+					               true);
+				}
+			});
+		}
+		
+		private void DrawYTicks(Cairo.Context ctx, Ticks ticks, double x, double lblx)
+		{
+			x -= ticks.Length / 2;
+
+			DrawTicks(ctx, ticks, 1, delegate (double y, double v) {
+				if (ticks.Visible)
+				{
+					if (d_showGrid)
+					{
+						ctx.MoveTo(0, -y);
+						ctx.RelLineTo(d_dimensions.Width, 0);
+					}
+					else
+					{
+						ctx.MoveTo(x, -y);
+						ctx.RelLineTo(ticks.Length, 0);
+					}
+					
+					ctx.Stroke();
+				}
+				
+				if (ticks.ShowLabels && v != 0)
+				{
+					DrawAxisNumber(ctx,
+					               v.ToString(String.Format("F{0}", ticks.CalculatedTickDecimals)),
+					               lblx,
+					               -y,
+					               2,
+					               2,
+					               Alignment.Right,
+					               Alignment.Center,
+					               d_axisLabelColors,
+					               true,
+					               false);
+				}				
+			});
+		}
+
+		private void DrawYAxis(Cairo.Context ctx)
+		{
+			d_axisColor.Set(ctx);
 			ctx.LineWidth = 1;
 			
-			Prepare(ctx);
+			double axisx = 0.5;
 			
-			ctx.MoveTo(d_xaxis.Min * scale.X, 0);
-			ctx.LineTo(d_xaxis.Max * scale.X, 0);
-
-			ctx.Stroke();
-			
-			// Draw ticks
-			if (d_ticks == null)
+			if (d_xaxis.Span() > 0)
 			{
-				return;
+				axisx = RoundInBase(d_dimensions.Width / d_xaxis.Span() * -d_xaxis.Min, 0.5);
+				
+				ctx.MoveTo(axisx, 0);
+				ctx.RelLineTo(0, d_dimensions.Height);
+				ctx.Stroke();
 			}
 			
-			// TODO: draw ticks
+			double maxlen = 0;
+			
+			foreach (Ticks ticks in d_xticks)
+			{
+				if (ticks.Visible && ticks.Length > maxlen)
+				{
+					maxlen = ticks.Length;
+				}
+			}
+
+			foreach (Ticks ticks in d_yticks)
+			{
+				DrawYTicks(ctx, ticks, axisx, axisx - maxlen / 2);
+			}
+
+			if (d_showRangeLabels)
+			{
+				DrawAxisNumber(ctx,
+				               d_yaxis.Max,
+				               axisx,
+				               0,
+				               2,
+				               2,
+				               Alignment.Right,
+				               Alignment.Top,
+				               d_axisLabelColors);
+
+				DrawAxisNumber(ctx,
+				               d_yaxis.Min,
+				               axisx,
+				               d_dimensions.Height,
+				               2,
+				               2,
+				               Alignment.Right,
+				               Alignment.Bottom,
+				               d_axisLabelColors);
+			}
+		}
+
+		private void DrawXAxis(Cairo.Context ctx)
+		{
+			d_axisColor.Set(ctx);
+			ctx.LineWidth = 1;
+			
+			double axisy = 0.5;
+			
+			Point<double> tr = AxisTransform;
+
+			if (d_yaxis.Span() > 0)
+			{
+				axisy = -RoundInBase(tr.Y, 0.5);
+				
+				ctx.MoveTo(0, axisy);
+				ctx.RelLineTo(d_dimensions.Width, 0);
+				ctx.Stroke();
+			}
+			
+			double maxlen = 0;
+			
+			foreach (Ticks ticks in d_xticks)
+			{
+				if (ticks.Visible && ticks.Length > maxlen)
+				{
+					maxlen = ticks.Length;
+				}
+			}
+
+			foreach (Ticks ticks in d_xticks)
+			{
+				DrawXTicks(ctx, ticks, axisy, axisy + maxlen / 2);
+			}
+			
+			if (d_showRangeLabels)
+			{
+				DrawAxisNumber(ctx,
+				               d_xaxis.Max,
+				               d_dimensions.Width,
+				               axisy,
+				               2,
+				               2,
+				               Alignment.Right,
+				               Alignment.Top,
+				               d_axisLabelColors);
+
+				DrawAxisNumber(ctx,
+				               d_xaxis.Min,
+				               0,
+				               axisy,
+				               2,
+				               2,
+				               Alignment.Left,
+				               Alignment.Top,
+				               d_axisLabelColors);
+			}			
 		}
 		
 		private double SampleWidth()
@@ -491,9 +1169,9 @@ namespace Plot
 				// draw the points we now need to draw, according to new shift
 				Prepare(ctx);
 				
-				foreach (LineSeries series in d_data)
+				foreach (Series.Line series in d_data)
 				{
-					Render(ctx, series, xrange, d_data[0].Count - num - 4);
+					series.Render(ctx, Scale, d_data[0].Count - num - 4);
 				}
 				
 				ctx.Restore();
@@ -502,37 +1180,11 @@ namespace Plot
 			EmitRequestRedraw();
 		}
 
-		private void Render(Cairo.Context ctx, LineSeries series, Range<double> xrange, int idx)
-		{
-			Point<double> scale = Scale;
-			SetGraphLine(ctx, series);
-			
-			bool first = true;
-			
-			foreach (Point<double> item in series.Range(idx))
-			{
-				double px = item.X * scale.X;
-				double py = item.Y * scale.Y;
-
-				if (first)
-				{
-					ctx.MoveTo(System.Math.Floor(px), -py);
-					first = false;
-				}
-				else
-				{
-					ctx.LineTo(px, -py);
-				}
-			}
-
-			ctx.Stroke();
-		}
-		
 		private void ClearBuffer(Cairo.Surface buf)
 		{
 			using (Cairo.Context ctx = new Cairo.Context(buf))
 			{
-				ctx.SetSourceRGB(d_backgroundColor.R, d_backgroundColor.G, d_backgroundColor.B);
+				d_backgroundColor.Set(ctx);
 				ctx.Paint();
 			}
 		}
@@ -604,9 +1256,6 @@ namespace Plot
 		{
 			d_recreate = false;
 			
-			RemoveBuffer(d_backbuffer, 0);
-			RemoveBuffer(d_backbuffer, 1);
-			
 			Cairo.Surface buf = SwapBuffer();
 			
 			if (buf == null)
@@ -618,29 +1267,29 @@ namespace Plot
 			{
 				Prepare(ctx);
 				
-				foreach (LineSeries series in d_data)
+				SetAntialias(ctx);
+				
+				foreach (Series.Line series in d_data)
 				{
-					Render(ctx, series, d_xaxis, 0);
+					series.Render(ctx, Scale, 0);
 				}
 			}
 		}
 		
-		private void DrawYAxis(Cairo.Context ctx)
+		public int RulerSeries
 		{
-			double cx = d_dimensions.Width - 0.5;
-			
-			ctx.LineWidth = 1;
-			ctx.SetSourceRGBA(d_axisColor.R, d_axisColor.G, d_axisColor.B, d_axisColor.A);
-			
-			string ym = (((int)(d_yaxis.Max * 100)) / 100.0).ToString();
-			Cairo.TextExtents e = ctx.TextExtents(ym);
-			ctx.MoveTo(cx - e.Width - 5, e.Height + 2);
-			ctx.ShowText(ym);
-			
-			ym = (((int)(d_yaxis.Min * 100)) / 100.0).ToString();
-			e = ctx.TextExtents(ym);
-			ctx.MoveTo(cx - e.Width - 5, d_dimensions.Height - 2);
-			ctx.ShowText(ym);
+			get
+			{
+				return d_ruleWhich;
+			}
+			set
+			{
+				if (d_ruleWhich != value && value <= d_data.Count && value >= 0)
+				{
+					d_ruleWhich = value;
+					EmitRequestRedraw();
+				}
+			}
 		}
 		
 		private void DrawRuler(Cairo.Context ctx)
@@ -650,54 +1299,106 @@ namespace Plot
 				return;
 			}
 
-			ctx.SetSourceRGB(0.5, 0.6, 1);
+			d_rulerColor.Set(ctx);
 			ctx.LineWidth = 1;
+			
+			double x = RoundInBase(d_ruler.X, 0.5);
 
-			ctx.MoveTo(d_ruler.X + 0.5, 0);
-			ctx.LineTo(d_ruler.X + 0.5, d_dimensions.Height);
+			// Draw yline
+			ctx.MoveTo(x, 0);
+			ctx.LineTo(x, d_dimensions.Height);
 			ctx.Stroke();
+
+			Point<double> tr = AxisTransform;
+			Point<double> pos = PixelToAxis(d_ruler);
 			
-			if (d_data.Count == 0)
+			Series.Line series;
+			double[] val = null;
+
+			bool extrapolated;
+			
+			if (d_ruleWhich < 0 || d_ruleWhich >= d_data.Count || !d_data[d_ruleWhich].CanRule)
 			{
-				return;
+				extrapolated = true;
 			}
-			
-			TimeSeries series = d_data[d_ruleWhich] as TimeSeries;
-			
-			if (series == null)
+			else
 			{
-				return;
+				series = d_data[d_ruleWhich];
+				val = series.Sample(new double[] {pos.X}, 0, out extrapolated);
 			}
 
+			if (extrapolated)
+			{
+				double py = RoundInBase(d_ruler.Y, 0.5);
+				
+				// If there is not data to track, draw xline on pointer				
+				ctx.MoveTo(0, py);
+				ctx.RelLineTo(d_dimensions.Width, 0);
+				ctx.Stroke();
+				
+				DrawAxisNumber(ctx,
+				               pos.X,
+				               x,
+				               0,
+				               2,
+				               2,
+				               Alignment.Left,
+				               Alignment.Top,
+				               d_rulerLabelColors);
+
+				DrawAxisNumber(ctx,
+				               pos.Y,
+				               d_dimensions.Width,
+				               py,
+				               2,
+				               2,
+				               Alignment.Right,
+				               Alignment.Top,
+				               d_rulerLabelColors);
+
+				return;
+			}
+			
 			Point<double> scale = Scale;
-			Prepare(ctx);
-			
-			double pos = d_ruler.X / scale.X + d_xaxis.Min;
-			double[] val = series.Sample(new double[] {pos});
 
-			// First draw label
-			string s = val[0].ToString("F3");
-			Cairo.TextExtents e = ctx.TextExtents(s);
-			
-			Point<double> pt = new Point<double>(pos * scale.X - 0.5f, val[0] * -scale.Y);
-			double top = d_yaxis.Max * -scale.Y;
-			
-			ctx.Rectangle(pt.X + 3, top + 1, e.Width + 4, e.Height + 4);
-			ctx.SetSourceRGBA(1, 1, 1, 0.8);
-			ctx.Fill();
-			
-			ctx.MoveTo(pt.X + 5, top + 3 + e.Height);
-			ctx.SetSourceRGBA(0, 0, 0, 0.8);
-			ctx.ShowText(s);
+			double yval = val[0];
+			double y = RoundInBase(-tr.Y + yval * -scale.Y, 0.5);
+
+			// Draw xline
+			ctx.MoveTo(0, y);
+			ctx.RelLineTo(d_dimensions.Width, 0);
 			ctx.Stroke();
 			
-			ctx.LineWidth = 1.5;
-			ctx.Arc(pt.X, pt.Y, 4, 0, 2 * Math.PI);
+			// Draw label for x
+			DrawAxisNumber(ctx,
+			               pos.X,
+			               d_dimensions.Width,
+			               y,
+			               2,
+			               2,
+			               Alignment.Right,
+			               Alignment.Top,
+			               d_rulerLabelColors);
+
+			// Draw label for y
+			DrawAxisNumber(ctx,
+			               yval,
+			               x,
+			               0,
+			               2,
+			               2,
+			               Alignment.Right,
+			               Alignment.Top,
+			               d_rulerLabelColors);
 			
-			ctx.SetSourceRGBA(0.6, 0.6, 1, 0.5);
+			// Draw circle
+			ctx.LineWidth = 1;
+			ctx.Arc(x, y, 4, 0, 2 * Math.PI);
+			
+			ctx.SetSourceRGBA(d_rulerColor.R, d_rulerColor.G, d_rulerColor.B, d_rulerColor.A * 0.5);
 			ctx.FillPreserve();
 			
-			ctx.SetSourceRGB(0.5, 0.6, 1);
+			d_rulerColor.Set(ctx);
 			ctx.Stroke();
 		}
 		
@@ -711,49 +1412,71 @@ namespace Plot
 		
 		private void DrawLabel(Cairo.Context ctx)
 		{
-			if (d_data.Count == 0)
+			if (d_data.Count == 0 || !d_showLabels)
 			{
 				return;
 			}
 			
-			Pango.Layout layout = Pango.CairoHelper.CreateLayout(ctx);
-			
-			if (d_font != null)
-			{
-				layout.FontDescription = d_font;
-			}
-			
-			List<string> labels = new List<string>();
-			
-			foreach (LineSeries series in d_data)
-			{
-				if (!String.IsNullOrEmpty(series.Label))
+			using (Pango.Layout layout = Pango.CairoHelper.CreateLayout(ctx))
+			{			
+				if (d_font != null)
 				{
-					string lbl = System.Security.SecurityElement.Escape(series.Label);
-					labels.Add("<span color='" + HexColor(series.Color) + "'>" + lbl + "</span>");
+					layout.FontDescription = d_font;
 				}
+				
+				List<string> labels = new List<string>();
+				
+				for (int i = 0; i < d_data.Count; ++i)
+				{
+					Series.Line series = d_data[i];
+
+					if (!String.IsNullOrEmpty(series.Label))
+					{
+						string lbl = System.Security.SecurityElement.Escape(series.Label);
+						string formatted = "<span color='" + HexColor(series.Color) + "'>" + lbl + "</span>";
+						
+						if (d_showRuler && d_ruleWhich == i)
+						{
+							formatted = "<b>" + formatted + "</b>";
+						}
+
+						labels.Add(formatted);
+					}
+				}
+				
+				string t = String.Join(", ", labels.ToArray());
+				
+				if (t == String.Empty)
+				{
+					return;
+				}
+				
+				layout.SetMarkup(t);
+				
+				int width, height;
+				layout.GetPixelSize(out width, out height);
+				
+				ctx.Rectangle(2, 2, width + 4, height + 4);
+				d_axisLabelColors.Bg.Set(ctx);
+				ctx.Fill();
+				
+				ctx.MoveTo(4, 4);
+				d_axisLabelColors.Fg.Set(ctx);
+				
+				Pango.CairoHelper.ShowLayout(ctx, layout);
 			}
-			
-			string t = String.Join(", ", labels.ToArray());
-			
-			if (t == String.Empty)
+		}
+		
+		private void SetAntialias(Cairo.Context ctx)
+		{
+			if (d_antialias)
 			{
-				return;
+				ctx.Antialias = Cairo.Antialias.Default;
 			}
-			
-			layout.SetMarkup(t);
-			
-			int width, height;
-			layout.GetPixelSize(out width, out height);
-			
-			ctx.Rectangle(1, 1, width + 3, height + 3);
-			ctx.SetSourceRGBA(1, 1, 1, 0.7);
-			ctx.Fill();
-			
-			ctx.MoveTo(1, 1);
-			ctx.SetSourceRGBA(d_axisColor.R, d_axisColor.G, d_axisColor.B, d_axisColor.A);
-			
-			Pango.CairoHelper.ShowLayout(ctx, layout);			
+			else
+			{
+				ctx.Antialias = Cairo.Antialias.None;
+			}
 		}
 		
 		public void Draw(Cairo.Context ctx)
@@ -768,8 +1491,10 @@ namespace Plot
 				return;
 			}
 			
-			ctx.Save();
+			SetAntialias(ctx);
 
+			ctx.Save();
+			
 			ctx.SetSourceSurface(d_backbuffer[d_currentBuffer], d_dimensions.X, d_dimensions.Y);
 			ctx.Paint();
 			
@@ -789,10 +1514,79 @@ namespace Plot
 			DrawXAxis(ctx);
 			ctx.Restore();
 			
-			if (d_showRuler && d_hasRuler)
+			if (d_showRuler)
 			{
 				DrawRuler(ctx);
 			}
+		}
+		
+		public void LookAt(Rectangle<double> rectangle)
+		{
+			d_xaxis.Freeze();
+			d_yaxis.Freeze();
+			
+			XAxis.Update(rectangle.X, rectangle.X + rectangle.Width);
+			YAxis.Update(rectangle.Y, rectangle.Y + rectangle.Height);
+			
+			d_xaxis.Thaw();
+			d_yaxis.Thaw();
+		}
+		
+		public void ZoomAt(Point<double> pt, double factorX, double factorY)
+		{
+			d_xaxis.Freeze();
+			d_yaxis.Freeze();
+
+			if (factorX > 0)
+			{
+				XAxis.Update(pt.X - (pt.X - d_xaxis.Min) / factorX,
+				             pt.X + (d_xaxis.Max - pt.X) / factorX);
+			}
+			
+			if (factorY > 0)
+			{		
+				YAxis.Update(pt.Y - (pt.Y - d_yaxis.Min) / factorY,
+			    	         pt.Y + (d_yaxis.Max - pt.Y) / factorY);
+			}
+			
+			d_xaxis.Thaw();
+			d_yaxis.Thaw();
+		}
+		
+		public void MoveBy(Point<double> pt)
+		{
+			d_xaxis.Freeze();
+			d_yaxis.Freeze();
+			
+			XAxis.Update(d_xaxis.Min + pt.X, d_xaxis.Max + pt.X);
+			YAxis.Update(d_yaxis.Min + pt.Y, d_yaxis.Max + pt.Y);
+			
+			d_xaxis.Thaw();
+			d_yaxis.Thaw();
+		}
+		
+		public Point<double> PixelToAxis(Point<double> pt)
+		{
+			return new Point<double>(d_xaxis.Min + pt.X * ((d_xaxis.Max - d_xaxis.Min) / d_dimensions.Width),
+			                         d_yaxis.Min + (d_dimensions.Height - pt.Y) * ((d_yaxis.Max - d_yaxis.Min) / d_dimensions.Height));
+		}
+		
+		public Point<double> ScaleFromPixel(Point<double> pt)
+		{
+			return new Point<double>(pt.X * ((d_xaxis.Max - d_xaxis.Min) / d_dimensions.Width),
+			                         pt.Y * ((d_yaxis.Max - d_yaxis.Min) / d_dimensions.Height));
+		}
+		
+		public void UpdateAxis(Range<double> xaxis, Range<double> yaxis)
+		{
+			d_xaxis.Freeze();
+			d_yaxis.Freeze();
+
+			d_xaxis.Update(xaxis);
+			d_yaxis.Update(yaxis);
+			
+			d_xaxis.Thaw();
+			d_yaxis.Thaw();
 		}
 	}
 }

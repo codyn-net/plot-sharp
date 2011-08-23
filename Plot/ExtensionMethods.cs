@@ -33,6 +33,11 @@ namespace Plot
 		{
 			r.Update(r.Min + size, r.Max + size);
 		}
+		
+		public static void Expand(this Range<double> r, double size)
+		{
+			r.Update(r.Min - size / 2, r.Max + size / 2);
+		}
 	}
 }
 
