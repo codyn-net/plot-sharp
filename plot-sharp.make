@@ -46,9 +46,12 @@ RESGEN=resgen2
 all: $(ASSEMBLY) $(PROGRAMFILES) $(LINUX_PKGCONFIG)
 
 FILES = \
+	Plot/Alignment.cs \
 	Plot/AssemblyInfo.cs \
+	Plot/AxisMode.cs \
+	Plot/Changeable.cs \
 	Plot/Color.cs \
-	Plot/Container.cs \
+	Plot/ColorFgBg.cs \
 	Plot/Directories.cs \
 	Plot/ExtensionMethods.cs \
 	Plot/Graph.cs \
@@ -56,12 +59,16 @@ FILES = \
 	Plot/Range.cs \
 	Plot/Rectangle.cs \
 	Plot/RequestSurfaceHandler.cs \
-	Plot/Ticks.cs
-
+	Plot.Series/Line.cs \
+	Plot.Series/Point.cs \
+	Plot.Series/Vector.cs \
+	Plot/SortedList.cs \
+	Plot/Ticks.cs \
+	Plot/Widget.cs
 
 DATA_FILES =
 
-RESOURCES =
+RESOURCES = Plot/menu.xml,Plot.Plot.menu.xml
 
 EXTRAS = \
 	plot-sharp.pc.in

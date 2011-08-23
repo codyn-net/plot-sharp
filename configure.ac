@@ -5,6 +5,8 @@ AC_INIT(libplot1-sharp, 0.1)
 AM_INIT_AUTOMAKE([foreign])
 AM_MAINTAINER_MODE
 
+AC_CONFIG_MACRO_DIR([m4])
+
 dnl pkg-config
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 if test "x$PKG_CONFIG" = "xno"; then
@@ -57,6 +59,7 @@ INSTALLED_ASSEMBLIES=""
 AC_SUBST(INSTALLED_ASSEMBLIES)
 
 AC_CONFIG_FILES([
+m4/Makefile
 plot-sharp.pc
 Makefile
 Plot/Directories.cs

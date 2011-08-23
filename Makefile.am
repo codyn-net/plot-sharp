@@ -1,6 +1,7 @@
-EXTRA_DIST = expansions.m4
+ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = .
+SUBDIRS = m4
+EXTRA_DIST =
 
 # Include project specific makefile
 include plot-sharp.make
