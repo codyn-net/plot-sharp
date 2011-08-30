@@ -1,4 +1,5 @@
 using System;
+using System.Xml.Serialization;
 
 namespace Plot
 {
@@ -9,7 +10,16 @@ namespace Plot
 		private double d_b;
 		private double d_a;
 		
+		public Color()
+		{
+		}
+		
 		public Color(string html)
+		{
+			Update(html);
+		}
+		
+		public void Update(string html)
 		{
 			if (!html.StartsWith("#"))
 			{
@@ -37,15 +47,27 @@ namespace Plot
 				return;
 			}
 			
-			d_r = FromHex(rest.Substring(0, 2));
-			d_g = FromHex(rest.Substring(2, 2));
-			d_b = FromHex(rest.Substring(4, 2));
-			d_a = FromHex(rest.Substring(6, 2));
+			Update(FromHex(rest.Substring(0, 2)),
+			       FromHex(rest.Substring(2, 2)),
+			       FromHex(rest.Substring(4, 2)),
+			       FromHex(rest.Substring(6, 2)));
 		}
 		
 		private double FromHex(string hex)
 		{
 			return Convert.ToInt32(hex, 16) / 255.0;
+		}
+		
+		public string Hex
+		{
+			get
+			{
+				return String.Format("#{0:x2}{1:x2}{2:x2}{3:x2}", 
+			    	                 (int)(d_r * 255),
+			        	             (int)(d_g * 255),
+			            	         (int)(d_b * 255),
+			            	         (int)(d_a * 255));
+			}
 		}
 
 		public Color(double r, double g, double b, double a)
@@ -110,7 +132,7 @@ namespace Plot
 		
 		public void Update(Color other)
 		{
-			Update(other.R, other.G, other.G, other.A);
+			Update(other.R, other.G, other.B, other.A);
 		}
 		
 		public void Update(double r, double g, double b)
