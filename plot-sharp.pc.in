@@ -1,7 +1,9 @@
-Name: plot-sharp
-Description: plot-sharp
-Version: @VERSION@
-Libraries=
+prefix=@prefix@
+libdir=${prefix}/lib
+Libraries=${libdir}/libplot@LIBPLOT_SHARP_API_VERSION@-sharp/Plot.dll
 
-Requires:
-Libs:
+Name: Plot#
+Description: Plot# - .NET plotting library
+Version: @VERSION@
+Requires: glib-sharp-2.0 gtk-sharp-2.0 gtksourceview2-sharp
+Libs: -r:${libdir}/libplot@LIBPLOT_SHARP_API_VERSION@-sharp/Plot.dll
