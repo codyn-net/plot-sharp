@@ -38,6 +38,12 @@ namespace Plot
 		{
 			r.Update(r.Min - size / 2, r.Max + size / 2);
 		}
+		
+		public static bool Contains(this Rectangle<double> r, Point<double> pos)
+		{
+			return pos.X >= r.X && pos.X <= r.X + r.Width &&
+			       pos.Y >= r.Y && pos.Y <= r.Y + r.Height;
+		}
 	}
 }
 
