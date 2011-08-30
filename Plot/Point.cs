@@ -14,6 +14,10 @@ namespace Plot
 			d_y = y;
 		}
 		
+		public Point(Point<T> other) : this(other.X, other.Y)
+		{
+		}
+		
 		public Point<T> Copy()
 		{
 			return new Point<T>(d_x, d_y);
