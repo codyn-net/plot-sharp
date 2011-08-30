@@ -44,6 +44,20 @@ namespace Plot
 			return pos.X >= r.X && pos.X <= r.X + r.Width &&
 			       pos.Y >= r.Y && pos.Y <= r.Y + r.Height;
 		}
+		
+		public static Range<double> Widen(this Range<double> r, double scale)
+		{
+			if (r.Span() == 0)
+			{
+				return new Range<double>(r.Min - scale, r.Max + scale);
+			}
+			else
+			{
+				double df = (r.Max - r.Min) * scale;
+				
+				return new Range<double>(r.Min - df, r.Max + df);
+			}
+		}
 	}
 }
 
