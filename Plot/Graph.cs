@@ -1465,7 +1465,7 @@ namespace Plot
 				return;
 			}
 			
-			surfaces[idx].Dispose();
+			surfaces[idx].Destroy();
 			surfaces[idx] = null;
 		}
 		
