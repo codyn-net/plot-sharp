@@ -111,6 +111,19 @@ namespace Plot
 				{
 					d_keepAxisAspect = value;
 					CheckAspect();
+					
+					if (!d_keepAxisAspect)
+					{
+						if (d_xaxisMode == AxisMode.Auto)
+						{
+							AxisModeChanged(d_xaxisMode, d_xaxis, d_renderersXRange);
+						}
+						
+						if (d_yaxisMode == AxisMode.Auto)
+						{
+							AxisModeChanged(d_yaxisMode, d_yaxis, d_renderersYRange);
+						}
+					}
 				}
 			}
 		}
