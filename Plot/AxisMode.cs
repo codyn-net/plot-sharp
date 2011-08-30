@@ -5,8 +5,7 @@ namespace Plot
 	public enum AxisMode
 	{
 		Fixed,
-		Auto,
-		AutoGrow
+		Auto
 	}
 }
 

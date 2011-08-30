@@ -13,6 +13,7 @@ namespace Plot
 		private bool d_showBox;
 		private bool d_showAxis;
 		private bool d_snapRulerToData;
+		private Point<double> d_autoMargin;
 
 		private List<Renderers.Renderer> d_renderers;
 		
@@ -116,12 +117,12 @@ namespace Plot
 					{
 						if (d_xaxisMode == AxisMode.Auto)
 						{
-							AxisModeChanged(d_xaxisMode, d_xaxis, d_renderersXRange);
+							AxisModeChanged(d_xaxisMode, d_xaxis, d_renderersXRange, d_autoMargin.X);
 						}
 						
 						if (d_yaxisMode == AxisMode.Auto)
 						{
-							AxisModeChanged(d_yaxisMode, d_yaxis, d_renderersYRange);
+							AxisModeChanged(d_yaxisMode, d_yaxis, d_renderersYRange, d_autoMargin.Y);
 						}
 					}
 				}
@@ -192,6 +193,14 @@ namespace Plot
 			}
 		}
 		
+		public Point<double> AutoMargin
+		{
+			get
+			{
+				return d_autoMargin;
+			}
+		}
+		
 		public Graph(Range<double> xaxis, Range<double> yaxis)
 		{
 			d_renderers = new List<Renderers.Renderer>();
@@ -214,6 +223,13 @@ namespace Plot
 			d_gridColor = new Color();
 			d_axisLabelColors = new ColorFgBg();
 			d_rulerLabelColors = new ColorFgBg();
+			
+			d_autoMargin = new Point<double>(0.1, 0.1);
+			
+			d_autoMargin.Changed += delegate {
+				RecalculateYAxis();
+				RecalculateXAxis();
+			};
 			
 			d_labelRegions = new Dictionary<Renderers.ILabeled, Rectangle<double>>();
 			
@@ -511,7 +527,7 @@ namespace Plot
 				{
 					d_yaxisMode = value;
 
-					AxisModeChanged(d_yaxisMode, d_yaxis, d_renderersYRange);
+					AxisModeChanged(d_yaxisMode, d_yaxis, d_renderersYRange, d_autoMargin.Y);
 				}
 			}
 		}
@@ -536,7 +552,7 @@ namespace Plot
 				{
 					d_xaxisMode = value;
 					
-					AxisModeChanged(d_xaxisMode, d_xaxis, d_renderersXRange);
+					AxisModeChanged(d_xaxisMode, d_xaxis, d_renderersXRange, d_autoMargin.X);
 				}
 			}
 		}
@@ -656,125 +672,111 @@ namespace Plot
 		
 		private delegate Range<double> SelectRange(Renderers.Renderer renderer);
 		
-		private void UpdateAxis(Range<double> range, AxisMode mode, Range<double> mine, Range<double> datarange, SelectRange selector)
+		private void UpdateDataRange(Range<double> range, SelectRange selector)
 		{
-			mine.Freeze();
-			datarange.Freeze();
+			range.Freeze();
+			
+			bool first = true;
+			range.Update(0, 0);
+			
+			foreach (Renderers.Renderer renderer in d_renderers)
+			{
+				Range<double> r = selector(renderer);
 
-			if (mode == AxisMode.AutoGrow)
-			{
-				// Simply only grow the ranges
-				UpdateRange(range, mine);
-			}
-			else
-			{
-				Range<double> maxit = new Range<double>();
-				bool first = true;
-				
-				foreach (Renderers.Renderer renderer in d_renderers)
+				if (first)
 				{
-					Range<double> r = selector(renderer);
-					
-					if (r == null)
-					{
-						continue;
-					}
-					
-					if (first || r.Max > maxit.Max)
-					{
-						maxit.Max = r.Max;
-					}
-					
-					if (first || r.Min < maxit.Min)
-					{
-						maxit.Min = r.Min;
-					}
-					
+					range.Update(r);
 					first = false;
 				}
-				
-				mine.Update(maxit.Widen(0.1));
+				else
+				{
+					if (r.Max > range.Max)
+					{
+						range.Max = r.Max;
+					}
+					
+					if (r.Min < range.Min)
+					{
+						range.Min = r.Min;
+					}
+				}
 			}
 			
-			CheckAspect();
-			
-			UpdateRange(range, datarange);
-
-			mine.Thaw();
-			datarange.Thaw();
+			range.Thaw();
 		}
 		
-		private void UpdateRange(Range<double> range, Range<double> mine)
+		private void RecalculateAxis(AxisMode mode, Range<double> axis, double margin, SelectRange selector)
 		{
-			if (range.Max > mine.Max)
-			{
-				mine.Max = range.Max;
-			}
-			
-			if (range.Min < mine.Min)
-			{
-				mine.Min = range.Min;
-			}
-		}
-
-		private void HandleRendererXRangeChanged(object sender, EventArgs e)
-		{
-			Range<double> r = (Range<double>)sender;
-			
-			if (d_xaxisMode != AxisMode.Fixed)
-			{
-				UpdateAxis(r, d_xaxisMode, d_xaxis, d_renderersXRange, a => a.XRange);
-			}
-			else
-			{
-				UpdateRange(r, d_renderersXRange);
-			}
-		}
-		
-		private void AxisModeChanged(AxisMode mode, Range<double> range, Range<double> dataRange)
-		{
-			/* Don't care about fixed mode */
 			if (mode == AxisMode.Fixed)
 			{
 				return;
 			}
+
+			axis.Freeze();
+			bool first = true;
 			
+			foreach (Renderers.Renderer renderer in d_renderers)
+			{
+				Range<double> r = selector(renderer);
+				
+				if (r == null)
+				{
+					continue;
+				}
+
+				if (first)
+				{
+					axis.Update(r);
+					first = false;
+				}
+				else
+				{
+					if (r.Max > axis.Max)
+					{
+						axis.Max = r.Max;
+					}
+					
+					if (r.Min < axis.Min)
+					{
+						axis.Min = r.Min;
+					}
+				}
+			}
+			
+			axis.Update(axis.Widen(margin));
+			CheckAspect();
+
+			axis.Thaw();
+		}
+		
+		private void RecalculateXAxis()
+		{
+			RecalculateAxis(d_xaxisMode, d_xaxis, d_autoMargin.X, a => a.XRange);
+		}
+		
+		private void RecalculateYAxis()
+		{
+			RecalculateAxis(d_yaxisMode, d_yaxis, d_autoMargin.Y, a => a.YRange);
+		}
+
+		private void HandleRendererXRangeChanged(object sender, EventArgs e)
+		{
+			RecalculateXAxis();			
+			UpdateDataRange(d_renderersXRange, a => a.XRange);
+		}
+		
+		private void AxisModeChanged(AxisMode mode, Range<double> range, Range<double> dataRange, double margin)
+		{
 			if (mode == AxisMode.Auto)
 			{
-				range.Update(dataRange.Widen(0.1));
-			}
-			else
-			{
-				/* Grow the axis if it is smaller than dataRange */
-				range.Freeze();
-				
-				if (range.Max < dataRange.Max)
-				{
-					range.Max = dataRange.Max;
-				}
-				
-				if (range.Min > dataRange.Min)
-				{
-					range.Min = dataRange.Min;
-				}
-				
-				range.Update(range.Widen(0.1));
-				range.Thaw();
+				range.Update(dataRange.Widen(margin));
 			}
 		}
 		
 		private void HandleRendererYRangeChanged(object sender, EventArgs e)
 		{
-			Range<double> r = (Range<double>)sender;
-			
-			if (d_yaxisMode != AxisMode.Fixed)
-			{
-				UpdateAxis(r, d_yaxisMode, d_yaxis, d_renderersYRange, a => a.YRange);
-			}
-			else
-			{
-				UpdateRange(r, d_renderersYRange);
-			}
+			RecalculateXAxis();			
+			UpdateDataRange(d_renderersYRange, a => a.YRange);
 		}
 
 		private void HandleRendererChanged(object sender, EventArgs e)
