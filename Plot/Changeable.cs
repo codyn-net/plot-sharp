@@ -5,13 +5,24 @@ namespace Plot
 	public class Changeable
 	{
 		public event EventHandler Changed = delegate {};
-
+		
 		private bool d_frozen;
 		private bool d_emitChanged;
 		
 		public void Freeze()
 		{
 			d_frozen = true;
+		}
+		
+		public void BeginIgnore()
+		{
+			d_frozen = true;
+		}
+		
+		public void EndIgnore()
+		{
+			d_frozen = false;
+			d_emitChanged = false;
 		}
 		
 		public void Thaw()
