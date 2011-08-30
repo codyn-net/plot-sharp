@@ -1,13 +1,29 @@
 <ui>
   <popup>
-    <menuitem name="ShowRuler" action="ActionShowRuler" />
-    <menuitem name="ShowTicks" action="ActionShowTicks" />
-    <menuitem name="ShowTickLabels" action="ActionShowTickLabels" />
-    <menuitem name="ShowGrid" action="ActionShowGrid" />
+    <menu name="Show" action="ActionShow">
+    	<menuitem name="ShowAxis" action="ActionShowAxis" />
+    	<menuitem name="ShowTicks" action="ActionShowTicks" />
+    	<menuitem name="ShowTickLabels" action="ActionShowTickLabels" />
+    	<menuitem name="ShowGrid" action="ActionShowGrid" />
+    	<menuitem name="ShowBox" action="ActionShowBox" />
+	    <menuitem name="ShowRuler" action="ActionShowRuler" />
+		<menuitem name="ShowLabels" action="ActionShowLabels" />
+		<separator/>
+		<placeholder name="ShowPlaceholder"/>
+    </menu>
+    <menuitem name="SnapRuler" action="ActionSnapRuler" />
 	<separator/>
 	<menuitem name="KeepAspect" action="ActionKeepAspect" />
 	<menuitem name="AutoAxis" action="ActionAutoAxis" />
 	<separator/>
-    <placeholder name="Additions" />
+	<menu name="Export" action="ActionExport">
+		<menuitem name="ExportPdf" action="ActionExportPdf"/>
+		<menuitem name="ExportPs" action="ActionExportPs"/>
+		<menuitem name="ExportSvg" action="ActionExportSvg"/>
+		<menuitem name="ExportPng" action="ActionExportPng"/>
+		<separator/>
+		<placeholder name="ExportPlaceholder"/>
+	</menu>
+    <placeholder name="MainPlaceholder" />
    </popup>
 </ui>

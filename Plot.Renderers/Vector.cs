@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace Plot.Series
+namespace Plot.Renderers
 {
-	public class Vector : Point
+	public class Vector : Line
 	{
 		public enum LengthType
 		{
@@ -32,7 +32,7 @@ namespace Plot.Series
 			d_drawArrowHead = true;
 			d_arrowHeadSize = -1;
 			
-			Style = Series.Point.PointStyle.None;
+			ShowLine = false;
 		}
 		
 		public bool ShowArrowHead
@@ -49,6 +49,31 @@ namespace Plot.Series
 					EmitChanged();
 				}
 			}
+		}
+		
+		protected override Line CopyTo(Line other)
+		{
+			 base.CopyTo(other);
+			 
+			 Vector v = (Vector)other;
+			 
+			 v.d_equalLength = d_equalLength;
+			 v.d_pixelLength = d_pixelLength;
+			 v.d_scale = new Point<double>(d_scale.X, d_scale.Y);
+			 v.d_drawArrowHead = d_drawArrowHead;
+			 v.d_arrowHeadSize = d_arrowHeadSize;
+			 v.d_lengthType = d_lengthType;
+			 
+			 v.d_dydx = new List<double>(d_dydx);
+			 v.d_length = new List<double>(d_length);
+			 v.d_lengthNorm = new List<double>(d_lengthNorm);
+			 
+			 return other;
+		}
+		
+		public override Renderer Copy()
+		{
+			return CopyTo(new Vector());
 		}
 		
 		public override bool CanRule
@@ -237,9 +262,12 @@ namespace Plot.Series
 			}
 		}
 		
-		public override void Render(Cairo.Context context, Point<double> scale, int idx, int length)
+		public override void Render(Cairo.Context context, Point<double> scale)
 		{
-			base.Render(context, scale, idx, length);
+			base.Render(context, scale);
+			
+			int idx = 0;
+			int length = Count;
 			
 			int endidx;
 			
@@ -268,18 +296,18 @@ namespace Plot.Series
 				
 				double l = Math.Sqrt(pdx * pdx + pdy * pdy);
 				
-				if (Style == PointStyle.Circle)
+				if (MarkerStyle == MarkerType.Circle)
 				{
 					// Start at the edge of the circle
-					px += 0.5 * Size / l * pdx;
-					py += 0.5 * Size / l * pdy;
+					px += 0.5 * MarkerSize / l * pdx;
+					py += 0.5 * MarkerSize / l * pdy;
 				}
 
 				context.MoveTo(px, py);
 				
 				// Scaling of pdx/pdy to incorporate arrow head
 				double s = 1;
-				double ars = Size;
+				double ars = MarkerSize;
 				
 				if (d_arrowHeadSize > 0)
 				{
@@ -307,7 +335,9 @@ namespace Plot.Series
 					//context.LineTo(ppx - l * (pdx - pdy * 0.5), ppy - l * (pdy + pdx * 0.5));
 					//context.ClosePath();
 				
-					if (Style == PointStyle.FilledCircle || Style == PointStyle.FilledSquare)
+					if (MarkerStyle == MarkerType.FilledCircle ||
+					    MarkerStyle == MarkerType.FilledSquare ||
+					    MarkerStyle == MarkerType.FilledTriangle)
 					{
 						context.Fill();
 					}

@@ -42,6 +42,7 @@
     <Reference Include="gdk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
       <Package>gtk-sharp-2.0</Package>
     </Reference>
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -59,14 +60,25 @@
     <Compile Include="Plot\AxisMode.cs" />
     <Compile Include="Plot\Alignment.cs" />
     <Compile Include="Plot\SortedList.cs" />
-    <Compile Include="Plot.Series\Vector.cs" />
-    <Compile Include="Plot.Series\Point.cs" />
-    <Compile Include="Plot.Series\Line.cs" />
     <Compile Include="Plot\Widget.cs" />
     <Compile Include="Plot\ColorFgBg.cs" />
+    <Compile Include="Plot.Export\Pdf.cs" />
+    <Compile Include="Plot.Export\Exporter.cs" />
+    <Compile Include="Plot.Export\Png.cs" />
+    <Compile Include="Plot.Export\Svg.cs" />
+    <Compile Include="Plot.Export\Ps.cs" />
+    <Compile Include="Plot.Renderers\Vector.cs" />
+    <Compile Include="Plot.Renderers\Line.cs" />
+    <Compile Include="Plot.Renderers\Renderer.cs" />
+    <Compile Include="Plot\Units.cs" />
+    <Compile Include="Plot.Renderers\ILabeled.cs" />
+    <Compile Include="Plot.Renderers\IColored.cs" />
+    <Compile Include="Plot.Renderers\TextBox.cs" />
+    <Compile Include="Plot.Renderers\Box.cs" />
+    <Compile Include="Plot\Border.cs" />
+    <Compile Include="Plot\Settings.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Plot.Series\" />
     <Folder Include="Plot\" />
     <Folder Include="Plot\" />
     <Folder Include="Plot\" />
@@ -80,6 +92,8 @@
     <Folder Include="Plot\" />
     <Folder Include="Plot\" />
     <Folder Include="Plot\" />
+    <Folder Include="Plot.Export\" />
+    <Folder Include="Plot.Renderers\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Plot\menu.xml" />

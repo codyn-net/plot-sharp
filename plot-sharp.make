@@ -49,21 +49,33 @@ FILES = \
 	Plot/Alignment.cs \
 	Plot/AssemblyInfo.cs \
 	Plot/AxisMode.cs \
+	Plot/Border.cs \
 	Plot/Changeable.cs \
 	Plot/Color.cs \
 	Plot/ColorFgBg.cs \
 	Plot/Directories.cs \
+	Plot.Export/Exporter.cs \
+	Plot.Export/Pdf.cs \
+	Plot.Export/Png.cs \
+	Plot.Export/Ps.cs \
+	Plot.Export/Svg.cs \
 	Plot/ExtensionMethods.cs \
 	Plot/Graph.cs \
 	Plot/Point.cs \
 	Plot/Range.cs \
 	Plot/Rectangle.cs \
+	Plot.Renderers/Box.cs \
+	Plot.Renderers/IColored.cs \
+	Plot.Renderers/ILabeled.cs \
+	Plot.Renderers/Line.cs \
+	Plot.Renderers/Renderer.cs \
+	Plot.Renderers/TextBox.cs \
+	Plot.Renderers/Vector.cs \
 	Plot/RequestSurfaceHandler.cs \
-	Plot.Series/Line.cs \
-	Plot.Series/Point.cs \
-	Plot.Series/Vector.cs \
+	Plot/Settings.cs \
 	Plot/SortedList.cs \
 	Plot/Ticks.cs \
+	Plot/Units.cs \
 	Plot/Widget.cs
 
 DATA_FILES =
@@ -77,6 +89,7 @@ REFERENCES =  \
 	System \
 	System.Core \
 	Mono.Cairo \
+	System.Xml \
 	$(GTK_SHARP_LIBS)
 
 DLL_REFERENCES =

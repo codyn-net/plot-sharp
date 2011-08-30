@@ -16,6 +16,9 @@ namespace Plot
 		private Point<double> d_selectStart;
 		private Point<double> d_selectEnd;
 		private Gtk.ActionGroup d_popupActions;
+		
+		public delegate void PopulatePopupHandler(object source, Gtk.UIManager manager);
+		public event PopulatePopupHandler PopulatePopup = delegate {};
 
 		public Widget()
 		{
@@ -36,15 +39,25 @@ namespace Plot
 			
 			d_popupActions = new Gtk.ActionGroup("PopupActions");
 			d_popupActions.Add(new Gtk.ToggleActionEntry[] {
-				new Gtk.ToggleActionEntry("ActionShowRuler", null, "Show Ruler", null, null, OnActionShowRuler, d_graph.ShowRuler),
-				new Gtk.ToggleActionEntry("ActionShowTicks", null, "Show Ticks", null, null, OnActionShowTicks, true),
-				new Gtk.ToggleActionEntry("ActionShowTickLabels", null, "Show Tick Labels", null, null, OnActionShowTickLabels, true),
-				new Gtk.ToggleActionEntry("ActionShowGrid", null, "Show Grid", null, null, OnActionShowGrid, d_graph.ShowGrid),
-				new Gtk.ToggleActionEntry("ActionKeepAspect", null, "Keep Aspect Ratio", null, null, OnActionKeepAspect, d_graph.KeepAspect)
+				new Gtk.ToggleActionEntry("ActionShowRuler", null, "Ruler", null, null, OnActionShowRuler, d_graph.ShowRuler),
+				new Gtk.ToggleActionEntry("ActionShowTicks", null, "Ticks", null, null, OnActionShowTicks, true),
+				new Gtk.ToggleActionEntry("ActionShowTickLabels", null, "Tick Labels", null, null, OnActionShowTickLabels, true),
+				new Gtk.ToggleActionEntry("ActionShowGrid", null, "Grid", null, null, OnActionShowGrid, d_graph.ShowGrid),
+				new Gtk.ToggleActionEntry("ActionKeepAspect", null, "Keep Aspect Ratio", null, null, OnActionKeepAspect, d_graph.KeepAspect),
+				new Gtk.ToggleActionEntry("ActionShowLabels", null, "Labels", null, null, OnActionShowLabels, d_graph.ShowLabels),
+				new Gtk.ToggleActionEntry("ActionShowBox", null, "Box", null, null, OnActionShowBox, d_graph.ShowBox),
+				new Gtk.ToggleActionEntry("ActionShowAxis", null, "Axis", null, null, OnActionShowAxis, d_graph.ShowAxis),
+				new Gtk.ToggleActionEntry("ActionSnapRuler", null, "Snap Ruler to Data", null, null, OnActionSnapRulerToData, d_graph.SnapRulerToData)
 			});
 			
 			d_popupActions.Add(new Gtk.ActionEntry[] {
-				new Gtk.ActionEntry("ActionAutoAxis", null, "Auto Axis", null, null, OnActionAutoAxis)
+				new Gtk.ActionEntry("ActionAutoAxis", null, "Auto Axis", null, null, OnActionAutoAxis),
+				new Gtk.ActionEntry("ActionExport", null, "Export", null, null, null),
+				new Gtk.ActionEntry("ActionExportPdf", null, "Export to PDF", null, null, OnActionExportPdf),
+				new Gtk.ActionEntry("ActionExportPs", null, "Export to PS", null, null, OnActionExportPs),
+				new Gtk.ActionEntry("ActionExportSvg", null, "Export to SVG", null, null, OnActionExportSvg),
+				new Gtk.ActionEntry("ActionExportPng", null, "Export to PNG", null, null, OnActionExportPng),
+				new Gtk.ActionEntry("ActionShow", null, "Show", null, null, null),
 			});
 		}
 		
@@ -165,31 +178,68 @@ namespace Plot
 		
 		private bool SwitchRuler(bool up)
 		{
-			int numser = d_graph.Series.Length;
-
-			if (numser == 0)
-			{
-				return false;
-			}
-
-			int nr = d_graph.RulerSeries + (up ? -1 : 1);
+			Renderers.Renderer lastrend = null;
 			
-			if (nr < 0)
+			foreach (Renderers.Renderer renderer in d_graph.Renderers)
 			{
-				nr = numser;
-			}
-			else if (nr > numser)
-			{
-				nr = 0;
+				if (renderer.HasRuler)
+				{
+					lastrend = renderer;
+					renderer.HasRuler = false;
+				}
 			}
 			
-			d_graph.RulerSeries = nr;
+			Renderers.Renderer beforecan = null;
+			Renderers.Renderer firstcan = null;
+			
+			foreach (Renderers.Renderer renderer in d_graph.Renderers)
+			{
+				if (renderer == lastrend)
+				{
+					if (!up && beforecan != null)
+					{
+						beforecan.HasRuler = true;
+						return true;
+					}
+					
+					lastrend = null;
+					continue;
+				}
+
+				if (renderer.CanRule)
+				{
+					if (firstcan == null)
+					{
+						firstcan = renderer;
+					}
+
+					beforecan = renderer;
+					
+					if (lastrend == null && !up)
+					{
+						renderer.HasRuler = true;
+						return true;
+					}
+				}
+			}
+			
+			if (firstcan != null && up)
+			{
+				firstcan.HasRuler = true;
+			}
+			else if (beforecan != null && !up)
+			{
+				beforecan.HasRuler = true;
+			}
+			
 			return true;
 		}
 		
 		protected override bool OnScrollEvent(Gdk.EventScroll evnt)
 		{
-			if ((evnt.State & Gdk.ModifierType.ControlMask) != 0)
+			Gdk.ModifierType state = Gtk.Accelerator.DefaultModMask & evnt.State;
+
+			if (state == Gdk.ModifierType.Mod1Mask)
 			{
 				return SwitchRuler(evnt.Direction == Gdk.ScrollDirection.Up);
 			}
@@ -202,24 +252,39 @@ namespace Plot
 		protected override bool OnLeaveNotifyEvent(Gdk.EventCrossing evnt)
 		{
 			d_graph.Ruler = null;
+			GdkWindow.Cursor = null;
+
 			return true;
 		}
 		
 		protected override bool OnEnterNotifyEvent(Gdk.EventCrossing evnt)
 		{
-			d_graph.Ruler = new Point<double>(evnt.X, evnt.Y);
+			Point<double> pt = new Point<double>(evnt.X, evnt.Y);
+
+			d_graph.Ruler = pt;
+			
+			Renderers.Renderer renderer;
+			
+			if (d_graph.LabelHitTest(pt, out renderer))
+			{
+				GdkWindow.Cursor = new Gdk.Cursor(Gdk.CursorType.Hand2);
+				d_graph.Ruler = null;
+			}
+
 			return true;
 		}
 		
 		protected override bool OnMotionNotifyEvent(Gdk.EventMotion evnt)
 		{
+			Plot.Point<double> pt = new Plot.Point<double>(evnt.X, evnt.Y);
+
 			if (d_graph.Ruler != null)
 			{
 				d_graph.Ruler.Move((int)evnt.X, (int)evnt.Y);
 			}
 			else
 			{
-				d_graph.Ruler = new Plot.Point<double>(evnt.X, evnt.Y);
+				d_graph.Ruler = pt;
 			}
 			
 			if (d_button != null)
@@ -228,15 +293,31 @@ namespace Plot
 			
 				d_graph.MoveBy(new Plot.Point<double>(-move.X + d_lastMove.X, move.Y - d_lastMove.Y));
 				d_lastMove = move;
+				
+				return true;
 			}
 			
 			if (d_selectStart != null)
 			{
-				d_selectEnd = new Point<double>(evnt.X, evnt.Y);
+				d_selectEnd = pt;
 				QueueDraw();
+				
+				return true;
+			}
+			
+			Renderers.Renderer renderer;
+			
+			if (d_graph.LabelHitTest(pt, out renderer))
+			{
+				GdkWindow.Cursor = new Gdk.Cursor(Gdk.CursorType.Hand2);
+				d_graph.Ruler = null;
+			}
+			else
+			{
+				GdkWindow.Cursor = null;
 			}
 
-			return true;
+			return false;
 		}
 		
 		protected override void OnSizeAllocated(Gdk.Rectangle allocation)
@@ -282,15 +363,8 @@ namespace Plot
 		
 		private IEnumerable<Ticks> ForeachTicks()
 		{
-			foreach (Ticks ticks in d_graph.XTicks)
-			{
-				yield return ticks;
-			}
-			
-			foreach (Ticks ticks in d_graph.YTicks)
-			{
-				yield return ticks;
-			}
+			yield return d_graph.XTicks;
+			yield return d_graph.YTicks;
 		}
 		
 		private bool DetermineShowTicks(out bool ret)
@@ -351,7 +425,11 @@ namespace Plot
 			
 			PopupToggleAction("ActionShowRuler").Active = d_graph.ShowRuler;
 			PopupToggleAction("ActionShowGrid").Active = d_graph.ShowGrid;
+			PopupToggleAction("ActionShowLabels").Active = d_graph.ShowLabels;
 			PopupToggleAction("ActionKeepAspect").Active = d_graph.KeepAspect;
+			PopupToggleAction("ActionShowBox").Active = d_graph.ShowBox;
+			PopupToggleAction("ActionShowAxis").Active = d_graph.ShowAxis;
+			PopupToggleAction("ActionSnapRuler").Active = d_graph.SnapRulerToData;
 			
 			bool ret;
 			
@@ -365,6 +443,8 @@ namespace Plot
 				PopupToggleAction("ActionShowTickLabels").Active = ret;
 			}
 			
+			PopulatePopup(this, manager);
+			
 			Gtk.Menu menu = (Gtk.Menu)manager.GetWidget("/popup");
 
 			menu.Popup(null, null, null, evnt != null ? evnt.Button : 0, evnt != null ? evnt.Time : 0);
@@ -372,6 +452,13 @@ namespace Plot
 		
 		protected override bool OnButtonPressEvent(Gdk.EventButton evnt)
 		{
+			Gdk.ModifierType mod = evnt.State & Gtk.Accelerator.DefaultModMask;
+			
+			if (mod != 0)
+			{
+				return false;
+			}
+
 			if (d_enableMove && evnt.Button == 2)
 			{
 				d_button = new Plot.Point<double>(evnt.X, evnt.Y);
@@ -409,6 +496,15 @@ namespace Plot
 					
 					d_graph.UpdateAxis(new Range<double>(pt1.X, pt2.X),
 					                   new Range<double>(pt2.Y, pt1.Y));
+				}
+				else if (evnt.Button == 1)
+				{
+					Renderers.Renderer renderer;
+
+					if (d_graph.LabelHitTest(new Point<double>(evnt.X, evnt.Y), out renderer))
+					{
+						renderer.HasRuler = !renderer.HasRuler;
+					}
 				}
 
 				d_selectStart = null;
@@ -474,7 +570,7 @@ namespace Plot
 		
 		public void AutoAxis()
 		{
-			d_graph.UpdateAxis(d_graph.DataXRange, d_graph.DataYRange);
+			d_graph.UpdateAxis(d_graph.DataXRange.Widen(0.1), d_graph.DataYRange.Widen(0.1));
 		}
 		
 		private void OnActionShowRuler(object source, EventArgs args)
@@ -534,6 +630,97 @@ namespace Plot
 		private void OnActionAutoAxis(object source, EventArgs args)
 		{
 			AutoAxis();
+		}
+		
+		private void OnActionShowLabels(object source, EventArgs args)
+		{
+			Gtk.ToggleAction action = (Gtk.ToggleAction)source;
+			
+			d_graph.ShowLabels = action.Active;
+		}
+		
+		private void OnActionShowBox(object source, EventArgs args)
+		{
+			Gtk.ToggleAction action = (Gtk.ToggleAction)source;
+			
+			d_graph.ShowBox = action.Active;
+		}
+		
+		private void OnActionShowAxis(object source, EventArgs args)
+		{
+			Gtk.ToggleAction action = (Gtk.ToggleAction)source;
+			
+			d_graph.ShowAxis = action.Active;
+		}
+		
+		private void OnActionSnapRulerToData(object source, EventArgs args)
+		{
+			Gtk.ToggleAction action = (Gtk.ToggleAction)source;
+			
+			d_graph.SnapRulerToData = action.Active;
+		}
+		
+		private delegate void ExporterHandler(string filename);
+		
+		private void ExportFilename(string extension, ExporterHandler handler)
+		{
+			Gtk.FileChooserDialog dlg = new Gtk.FileChooserDialog("Export graph as " + extension.ToUpper(),
+			                                                      (Gtk.Window)Toplevel,
+			                                                      Gtk.FileChooserAction.Save,
+			                                                      Gtk.Stock.Cancel, Gtk.ResponseType.Cancel,
+			                                                      Gtk.Stock.Save, Gtk.ResponseType.Ok);
+			
+			Gtk.FileFilter filter = new Gtk.FileFilter();
+			
+			filter.Name = extension.ToUpper();
+			filter.AddPattern("*." + extension);
+
+			dlg.AddFilter(filter);
+			dlg.CurrentName = "export." + extension;
+			dlg.DoOverwriteConfirmation = true;
+		
+			dlg.Response += delegate(object o, Gtk.ResponseArgs args) {
+				if (args.ResponseId == Gtk.ResponseType.Ok)
+				{
+					handler(dlg.Filename);
+				}
+				
+				dlg.Destroy();
+			};
+		
+			dlg.Present();
+		}
+		
+		private void OnActionExportPdf(object source, EventArgs args)
+		{
+			ExportFilename("pdf", delegate (string filename) {
+				Export.Pdf exporter = new Export.Pdf(d_graph, filename);
+				exporter.Export();
+			});
+		}
+		
+		private void OnActionExportPs(object source, EventArgs args)
+		{
+			ExportFilename("ps", delegate (string filename) {
+				Export.Ps exporter = new Export.Ps(d_graph, filename);
+				exporter.Export();
+			});
+		}
+		
+		private void OnActionExportSvg(object source, EventArgs args)
+		{
+			ExportFilename("svg", delegate (string filename) {
+				Export.Svg exporter = new Export.Svg(d_graph, filename);
+				exporter.Export();
+			});
+		}
+		
+		private void OnActionExportPng(object source, EventArgs args)
+		{
+			ExportFilename("png", delegate (string filename) {
+				Export.Png exporter = new Export.Png(d_graph, filename);
+				exporter.Export();
+			});
 		}
 	}
 }
