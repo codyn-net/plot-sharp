@@ -224,7 +224,7 @@ namespace Plot
 			d_axisLabelColors = new ColorFgBg();
 			d_rulerLabelColors = new ColorFgBg();
 			
-			d_autoMargin = new Point<double>(0.1, 0.1);
+			d_autoMargin = new Point<double>(0, 0.1);
 			
 			d_autoMargin.Changed += delegate {
 				RecalculateYAxis();
