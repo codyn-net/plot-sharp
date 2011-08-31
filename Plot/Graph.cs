@@ -1241,6 +1241,11 @@ namespace Plot
 				ctx.Stroke();
 			});
 		}
+		
+		private bool YAxisOnBorder(double xaxis)
+		{
+			return xaxis < 1 || xaxis > d_dimensions.Width - 1;
+		}
 
 		private void DrawYAxis(Cairo.Context ctx)
 		{
@@ -1255,7 +1260,7 @@ namespace Plot
 				
 			DrawYTicks(ctx, d_yticks, axisx, axisx - d_yticks.Length / 2);
 			
-			if (d_showAxis)
+			if (d_showAxis && !YAxisOnBorder(axisx))
 			{			
 				d_axisColor.Set(ctx);
 			
@@ -1263,6 +1268,11 @@ namespace Plot
 				ctx.RelLineTo(0, d_dimensions.Height);
 				ctx.Stroke();
 			}
+		}
+		
+		private bool XAxisOnBorder(double yaxis)
+		{
+			return yaxis < 1 || yaxis > d_dimensions.Height - 1;
 		}
 
 		private void DrawXAxis(Cairo.Context ctx)
@@ -1280,7 +1290,7 @@ namespace Plot
 			
 			DrawXTicks(ctx, d_xticks, axisy, axisy + d_xticks.Length / 2);
 			
-			if (d_showAxis)
+			if (d_showAxis && !XAxisOnBorder(axisy))
 			{			
 				d_axisColor.Set(ctx);
 
