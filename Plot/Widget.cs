@@ -40,6 +40,7 @@ namespace Plot
 			d_popupActions = new Gtk.ActionGroup("PopupActions");
 			d_popupActions.Add(new Gtk.ToggleActionEntry[] {
 				new Gtk.ToggleActionEntry("ActionShowRuler", null, "Ruler", null, null, OnActionShowRuler, d_graph.ShowRuler),
+				new Gtk.ToggleActionEntry("ActionShowRulerAxis", null, "Ruler Axis", null, null, OnActionShowRulerAxis, d_graph.ShowRulerAxis),
 				new Gtk.ToggleActionEntry("ActionShowTicks", null, "Ticks", null, null, OnActionShowTicks, true),
 				new Gtk.ToggleActionEntry("ActionShowTickLabels", null, "Tick Labels", null, null, OnActionShowTickLabels, true),
 				new Gtk.ToggleActionEntry("ActionShowGrid", null, "Grid", null, null, OnActionShowGrid, d_graph.ShowGrid),
@@ -424,6 +425,7 @@ namespace Plot
 			manager.AddUiFromResource("Plot.Plot.menu.xml");
 			
 			PopupToggleAction("ActionShowRuler").Active = d_graph.ShowRuler;
+			PopupToggleAction("ActionShowRulerAxis").Active = d_graph.ShowRulerAxis;
 			PopupToggleAction("ActionShowGrid").Active = d_graph.ShowGrid;
 			PopupToggleAction("ActionShowLabels").Active = d_graph.ShowLabels;
 			PopupToggleAction("ActionKeepAspect").Active = d_graph.KeepAspect;
@@ -578,6 +580,13 @@ namespace Plot
 			Gtk.ToggleAction action = (Gtk.ToggleAction)source;
 			
 			d_graph.ShowRuler = action.Active;
+		}
+		
+		private void OnActionShowRulerAxis(object source, EventArgs args)
+		{
+			Gtk.ToggleAction action = (Gtk.ToggleAction)source;
+			
+			d_graph.ShowRulerAxis = action.Active;
 		}
 		
 		private void OnActionKeepAspect(object source, EventArgs args)

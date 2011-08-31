@@ -23,6 +23,7 @@ namespace Plot
 		public bool KeepAspect { get; set; }
 		public bool Antialias { get; set; }
 		public bool SnapRulerToData { get; set; }
+		public bool ShowRulerAxis { get; set; }
 		public double AxisAspect { get; set; }
 		public string AxisColor { get; set; }		
 		public string BackgroundColor { get; set; }
@@ -46,6 +47,7 @@ namespace Plot
 			ShowYTicksLabels = true;
 			KeepAspect = false;
 			ShowRuler = true;
+			ShowRulerAxis = true;
 			
 			XAxisMode = AxisMode.Auto;
 			YAxisMode = AxisMode.Auto;
@@ -120,6 +122,7 @@ namespace Plot
 			graph.ShowBox = ShowBox;
 			graph.ShowGrid = ShowGrid;
 			graph.ShowRuler = ShowRuler;
+			graph.ShowRulerAxis = ShowRulerAxis;
 			graph.ShowLabels = ShowLabels;
 			graph.ShowRangeLabels = ShowRangeLabels;
 			graph.XTicks.Visible = ShowXTicks;
@@ -152,6 +155,8 @@ namespace Plot
 			ShowGrid = graph.ShowGrid;
 			ShowRuler = graph.ShowRuler;
 			ShowLabels = graph.ShowLabels;
+			ShowRulerAxis = graph.ShowRulerAxis;
+
 			ShowRangeLabels = graph.ShowRangeLabels;
 			ShowXTicks = graph.XTicks.Visible;
 			ShowYTicks = graph.YTicks.Visible;

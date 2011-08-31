@@ -14,6 +14,10 @@ namespace Plot
 		{
 		}
 		
+		public Color(Color other) : this(other.R, other.G, other.B, other.A)
+		{
+		}
+		
 		public Color(string html)
 		{
 			Update(html);

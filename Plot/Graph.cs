@@ -13,6 +13,7 @@ namespace Plot
 		private bool d_showBox;
 		private bool d_showAxis;
 		private bool d_snapRulerToData;
+		private bool d_showRulerAxis;
 		private Point<double> d_autoMargin;
 
 		private List<Renderers.Renderer> d_renderers;
@@ -401,6 +402,22 @@ namespace Plot
 			get
 			{
 				return d_dimensions;
+			}
+		}
+		
+		public bool ShowRulerAxis
+		{
+			get
+			{
+				return d_showRulerAxis;
+			}
+			set
+			{
+				if (d_showRulerAxis != value)
+				{
+					d_showRulerAxis = value;
+					EmitRequestRedraw();
+				}
 			}
 		}
 
@@ -1555,7 +1572,7 @@ namespace Plot
 			Point<double> scale = Scale;
 			double x = RoundInBase(d_ruler.X, 0.5);
 			
-			if (!d_snapRulerToData)
+			if (!d_snapRulerToData && d_showRulerAxis)
 			{
 				// Draw yline
 				ctx.MoveTo(x, 0);
@@ -1589,9 +1606,12 @@ namespace Plot
 						x = RoundInBase(tr.X + val.X * scale.X, 0.5);
 	
 						// Draw yline
-						ctx.MoveTo(x, 0);
-						ctx.LineTo(x, d_dimensions.Height);
-						ctx.Stroke();
+						if (d_showRulerAxis)
+						{
+							ctx.MoveTo(x, 0);
+							ctx.LineTo(x, d_dimensions.Height);
+							ctx.Stroke();
+						}
 					}
 				}
 				else
@@ -1617,13 +1637,19 @@ namespace Plot
 				
 				if (colored != null && colored.Color != null)
 				{
-					colored.Color.Set(ctx);
+					Color c = new Color(colored.Color);
+					c.A *= 0.5;
+
+					c.Set(ctx);
 					fgbg.Fg.Update(colored.Color);
 				}
-	
-				ctx.MoveTo(0, y);
-				ctx.RelLineTo(d_dimensions.Width, 0);
-				ctx.Stroke();
+				
+				if (d_showRulerAxis)
+				{	
+					ctx.MoveTo(0, y);
+					ctx.RelLineTo(d_dimensions.Width, 0);
+					ctx.Stroke();
+				}
 
 				// Draw circle
 				ctx.LineWidth = 1;
