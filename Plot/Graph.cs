@@ -1344,13 +1344,7 @@ namespace Plot
 
 			DrawYLabels(ctx, d_yticks, axisx, axisxlbl);
 		}
-		
-		private double SampleWidth()
-		{
-			// The data width (considering xrange) corresponding to 1 pixel
-			return 1 / Scale.X;
-		}
-		
+
 		private void RedrawUnprocessed(int num)
 		{
 			/* TODO
