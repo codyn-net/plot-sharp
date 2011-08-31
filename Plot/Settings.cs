@@ -44,7 +44,7 @@ namespace Plot
 			ShowYTicks = true;
 			ShowXTicksLabels = true;
 			ShowYTicksLabels = true;
-			KeepAspect = true;
+			KeepAspect = false;
 			ShowRuler = true;
 			
 			XAxisMode = AxisMode.Auto;
