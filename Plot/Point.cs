@@ -71,6 +71,11 @@ namespace Plot
 			}
 		}
 		
+		public void Move(Point<T> point)
+		{
+			Move(point.X, point.Y);
+		}
+		
 		public void Move(T x, T y)
 		{
 			if (Eq(d_x, x) && Eq(d_y, y))
