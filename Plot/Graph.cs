@@ -775,7 +775,7 @@ namespace Plot
 		
 		private void HandleRendererYRangeChanged(object sender, EventArgs e)
 		{
-			RecalculateXAxis();			
+			RecalculateYAxis();			
 			UpdateDataRange(d_renderersYRange, a => a.YRange);
 		}
 
