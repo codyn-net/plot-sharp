@@ -64,18 +64,20 @@ namespace Plot
 		
 		public event RequestSurfaceHandler RequestSurface = delegate {};
 		public event EventHandler RequestRedraw = delegate {};
-
+    
+    
 		static Graph()
 		{
 			s_colors = new Color[] {
-				new Color("#729fcf"),
-				new Color("#8ae234"),
-				new Color("#ef2929"),
-				new Color("#fce94f"),
-				new Color("#ad7fa8"),
-				new Color("#fcaf3e"),
-				new Color("#888a85"),
-				new Color("#e9b96e")
+				new Color(0.1647, 0.3431, 0.5863),
+				new Color(0.3784, 0.7137, 0.0549),
+				new Color(0.7216, 0, 0),
+				new Color(0.4098, 0.2608, 0.4412),
+				new Color(0.8490, 0.7294, 0),
+				new Color(0.8843, 0.4176, 0),
+				new Color(0.6588, 0.4196, 0.0373),
+				new Color(0.7784, 0.7922, 0.7627),
+				new Color(0.2569, 0.2725, 0.2686)
 			};
 		}
 		
