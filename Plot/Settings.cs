@@ -34,6 +34,7 @@ namespace Plot
 		public string GridColor { get; set; }
 		public AxisMode XAxisMode { get; set; }
 		public AxisMode YAxisMode { get; set; }
+		public Point<double> AutoMargin { get; set; }
 		
 		public Settings()
 		{
@@ -48,6 +49,8 @@ namespace Plot
 			
 			XAxisMode = AxisMode.Auto;
 			YAxisMode = AxisMode.Auto;
+			
+			AutoMargin = new Point<double>(0, 0.05);
 			
 			AxisAspect = 1;
 			
@@ -138,6 +141,8 @@ namespace Plot
 			graph.AxisLabelColors.Fg.Update(AxisLabelColorsFg);
 			graph.AxisLabelColors.Bg.Update(AxisLabelColorsBg);
 			graph.GridColor.Update(GridColor);
+			
+			graph.AutoMargin.Move(AutoMargin);
 		}
 		
 		public void Get(Graph graph)
@@ -167,6 +172,8 @@ namespace Plot
 			AxisLabelColorsFg = graph.AxisLabelColors.Fg.Hex;
 			AxisLabelColorsBg = graph.AxisLabelColors.Bg.Hex;
 			GridColor = graph.GridColor.Hex;
+			
+			AutoMargin.Move(graph.AutoMargin);
 		}
 		
 		public override bool Equals(object obj)
