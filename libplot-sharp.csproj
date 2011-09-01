@@ -78,6 +78,8 @@
     <Compile Include="Plot\Border.cs" />
     <Compile Include="Plot\Settings.cs" />
     <Compile Include="Plot\ColorMap.cs" />
+    <Compile Include="Plot.Export\Gdk.cs" />
+    <Compile Include="Plot.Export\Surface.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Plot\" />

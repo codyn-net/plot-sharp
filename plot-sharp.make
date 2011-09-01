@@ -60,6 +60,8 @@ FILES = \
 	Plot.Export/Png.cs \
 	Plot.Export/Ps.cs \
 	Plot.Export/Svg.cs \
+	Plot.Export/Gdk.cs \
+	Plot.Export/Surface.cs \
 	Plot/ExtensionMethods.cs \
 	Plot/Graph.cs \
 	Plot/Point.cs \
