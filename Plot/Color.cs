@@ -163,6 +163,11 @@ namespace Plot
 		{
 			ctx.SetSourceRGBA(d_r, d_g, d_b, d_a);
 		}
+		
+		public override string ToString()
+		{
+			return Hex;
+		}
 	}
 }
 

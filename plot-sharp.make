@@ -53,6 +53,7 @@ FILES = \
 	Plot/Changeable.cs \
 	Plot/Color.cs \
 	Plot/ColorFgBg.cs \
+	Plot/ColorMap.cs \
 	Plot/Directories.cs \
 	Plot.Export/Exporter.cs \
 	Plot.Export/Pdf.cs \

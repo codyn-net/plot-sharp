@@ -59,50 +59,125 @@ namespace Plot
 		
 		private Color d_gridColor;
 		
-		private static Color[] s_colors;
-		private static int s_colorIndex;
+		private ColorMap d_colorMap;
 		private bool d_antialias;
 		
 		public event RequestSurfaceHandler RequestSurface = delegate {};
 		public event EventHandler RequestRedraw = delegate {};
-    
-    
-		static Graph()
+		
+		public Graph(Range<double> xaxis, Range<double> yaxis)
 		{
-			s_colors = new Color[] {
-				new Color(0.1647, 0.3431, 0.5863),
-				new Color(0.3784, 0.7137, 0.0549),
-				new Color(0.7216, 0, 0),
-				new Color(0.4098, 0.2608, 0.4412),
-				new Color(0.8490, 0.7294, 0),
-				new Color(0.8843, 0.4176, 0),
-				new Color(0.6588, 0.4196, 0.0373),
-				new Color(0.7784, 0.7922, 0.7627),
-				new Color(0.2569, 0.2725, 0.2686)
+			d_renderers = new List<Renderers.Renderer>();
+			
+			d_xaxis = xaxis;
+			d_yaxis = yaxis;
+			
+			d_renderersXRange = new Range<double>(0, 0);
+			d_renderersYRange = new Range<double>(0, 0);
+			
+			d_xticks = new Ticks();
+			d_xticks.Changed += OnXTicksChanged;
+
+			d_yticks = new Ticks();
+			d_yticks.Changed += OnYTicksChanged;
+			
+			d_backgroundColor = new Color();
+			d_axisColor = new Color();
+			d_rulerColor = new Color();
+			d_gridColor = new Color();
+			d_axisLabelColors = new ColorFgBg();
+			d_rulerLabelColors = new ColorFgBg();
+			
+			d_autoMargin = new Point<double>(0, 0.1);
+			d_colorMap = ColorMap.Default.Copy();
+			
+			d_colorMap.Changed += delegate {
+				UpdateColors();
 			};
-		}
-		
-		public static void ResetColors()
-		{
-			s_colorIndex = 0;
-		}
-		
-		private static Color NextColor()
-		{
-			Color ret = s_colors[s_colorIndex];
 			
-			if (s_colorIndex + 1 == s_colors.Length)
-			{
-				s_colorIndex = 0;
-			}
-			else
-			{
-				++s_colorIndex;
-			}
+			d_autoMargin.Changed += delegate {
+				RecalculateYAxis();
+				RecalculateXAxis();
+			};
 			
-			return ret;
+			d_labelRegions = new Dictionary<Renderers.ILabeled, Rectangle<double>>();
+			
+			d_xaxis.Changed += delegate {
+				CheckAspect();
+				
+				UpdateXTicks();
+				Redraw();
+				
+				d_xaxisMode = AxisMode.Fixed;
+			};
+			
+			d_yaxis.Changed += delegate {
+				d_recreate = true;
+				
+				CheckAspect();
+				
+				UpdateYTicks();
+				Redraw();
+				
+				d_yaxisMode = AxisMode.Fixed;
+			};
+
+			d_dimensions = new Rectangle<int>();
+			
+			d_dimensions.Resized += delegate {
+				d_recreate = true;
+
+				RemoveBuffer(d_backbuffer, 0);
+				RemoveBuffer(d_backbuffer, 1);
+				
+				UpdateXTicks();
+				UpdateYTicks();
+				
+				CheckAspect();
+
+				Redraw();
+			};
+			
+			d_dimensions.Moved += delegate {
+				UpdateXTicks();
+				UpdateYTicks();
+
+				Redraw();
+			};
+			
+			d_backbuffer = new Cairo.Surface[2] {null, null};
+			d_recreate = true;
+
+			d_currentBuffer = 0;
+			
+			Settings.Default(this);
+			
+			d_backgroundColor.Changed += RedrawWhenChanged;
+			d_axisColor.Changed += RedrawWhenChanged;
+			d_axisLabelColors.Changed += RedrawWhenChanged;
+			d_rulerColor.Changed += RedrawWhenChanged;
+			d_rulerLabelColors.Changed += RedrawWhenChanged;
+			d_gridColor.Changed += RedrawWhenChanged;
 		}
 		
+		public Graph() : this(new Range<double>(-1, 1), new Range<double>(1, -1))
+		{
+		}
+		
+		public void Dispose()
+		{
+			RemoveBuffer(d_backbuffer, 0);
+			RemoveBuffer(d_backbuffer, 1);
+		}
+		
+		public ColorMap ColorMap
+		{
+			get
+			{
+				return d_colorMap;
+			}
+		}
+
 		public bool KeepAspect
 		{
 			get
@@ -120,12 +195,12 @@ namespace Plot
 					{
 						if (d_xaxisMode == AxisMode.Auto)
 						{
-							AxisModeChanged(d_xaxisMode, d_xaxis, d_renderersXRange, d_autoMargin.X);
+							AxisModeChanged(ref d_xaxisMode, d_xaxis, d_renderersXRange, d_autoMargin.X);
 						}
 						
 						if (d_yaxisMode == AxisMode.Auto)
 						{
-							AxisModeChanged(d_yaxisMode, d_yaxis, d_renderersYRange, d_autoMargin.Y);
+							AxisModeChanged(ref d_yaxisMode, d_yaxis, d_renderersYRange, d_autoMargin.Y);
 						}
 					}
 				}
@@ -203,103 +278,7 @@ namespace Plot
 				return d_autoMargin;
 			}
 		}
-		
-		public Graph(Range<double> xaxis, Range<double> yaxis)
-		{
-			d_renderers = new List<Renderers.Renderer>();
-			
-			d_xaxis = xaxis;
-			d_yaxis = yaxis;
-			
-			d_renderersXRange = new Range<double>(0, 0);
-			d_renderersYRange = new Range<double>(0, 0);
-			
-			d_xticks = new Ticks();
-			d_xticks.Changed += OnXTicksChanged;
 
-			d_yticks = new Ticks();
-			d_yticks.Changed += OnYTicksChanged;
-			
-			d_backgroundColor = new Color();
-			d_axisColor = new Color();
-			d_rulerColor = new Color();
-			d_gridColor = new Color();
-			d_axisLabelColors = new ColorFgBg();
-			d_rulerLabelColors = new ColorFgBg();
-			
-			d_autoMargin = new Point<double>(0, 0.1);
-			
-			d_autoMargin.Changed += delegate {
-				RecalculateYAxis();
-				RecalculateXAxis();
-			};
-			
-			d_labelRegions = new Dictionary<Renderers.ILabeled, Rectangle<double>>();
-			
-			d_xaxis.Changed += delegate {
-				CheckAspect();
-				
-				UpdateXTicks();
-				Redraw();
-			};
-			
-			d_yaxis.Changed += delegate {
-				d_recreate = true;
-				
-				CheckAspect();
-				
-				UpdateYTicks();
-				Redraw();
-			};
-
-			d_dimensions = new Rectangle<int>();
-			
-			d_dimensions.Resized += delegate {
-				d_recreate = true;
-
-				RemoveBuffer(d_backbuffer, 0);
-				RemoveBuffer(d_backbuffer, 1);
-				
-				UpdateXTicks();
-				UpdateYTicks();
-				
-				CheckAspect();
-
-				Redraw();
-			};
-			
-			d_dimensions.Moved += delegate {
-				UpdateXTicks();
-				UpdateYTicks();
-
-				Redraw();
-			};
-			
-			d_backbuffer = new Cairo.Surface[2] {null, null};
-			d_recreate = true;
-
-			d_currentBuffer = 0;
-			
-			Settings.Default(this);
-			
-			d_backgroundColor.Changed += RedrawWhenChanged;
-			d_axisColor.Changed += RedrawWhenChanged;
-			d_axisLabelColors.Changed += RedrawWhenChanged;
-			d_rulerColor.Changed += RedrawWhenChanged;
-			d_rulerLabelColors.Changed += RedrawWhenChanged;
-			d_gridColor.Changed += RedrawWhenChanged;
-		}
-		
-		public Graph() : this(new Range<double>(-1, 1), new Range<double>(1, -1))
-		{
-		}
-		
-		public void Dispose()
-		{
-			RemoveBuffer(d_backbuffer, 0);
-			RemoveBuffer(d_backbuffer, 1);
-		}
-		
 		public Pango.FontDescription Font
 		{
 			get
@@ -546,7 +525,7 @@ namespace Plot
 				{
 					d_yaxisMode = value;
 
-					AxisModeChanged(d_yaxisMode, d_yaxis, d_renderersYRange, d_autoMargin.Y);
+					AxisModeChanged(ref d_yaxisMode, d_yaxis, d_renderersYRange, d_autoMargin.Y);
 				}
 			}
 		}
@@ -571,7 +550,7 @@ namespace Plot
 				{
 					d_xaxisMode = value;
 					
-					AxisModeChanged(d_xaxisMode, d_xaxis, d_renderersXRange, d_autoMargin.X);
+					AxisModeChanged(ref d_xaxisMode, d_xaxis, d_renderersXRange, d_autoMargin.X);
 				}
 			}
 		}
@@ -619,17 +598,29 @@ namespace Plot
 				return d_yticks;
 			}
 		}
+		
+		private void UpdateColors()
+		{
+			int idx = 0;
+
+			foreach (Renderers.Renderer renderer in d_renderers)
+			{
+				Renderers.IColored colored = renderer as Renderers.IColored;
+				
+				if (colored != null)
+				{
+					colored.Color = d_colorMap[idx++];
+				}
+			}
+			
+			EmitRequestRedraw();
+		}
 
 		public void Add(Renderers.Renderer renderer)
 		{
 			d_renderers.Add(renderer);
 			
-			Renderers.IColored colored = renderer as Renderers.IColored;
-			
-			if (colored != null && colored.Color == null)
-			{
-				colored.Color = NextColor();
-			}
+			UpdateColors();
 			
 			if (d_renderers.Count == 1)
 			{
@@ -724,7 +715,7 @@ namespace Plot
 			range.Thaw();
 		}
 		
-		private void RecalculateAxis(AxisMode mode, Range<double> axis, double margin, SelectRange selector)
+		private void RecalculateAxis(ref AxisMode mode, Range<double> axis, double margin, SelectRange selector)
 		{
 			if (mode == AxisMode.Fixed)
 			{
@@ -766,29 +757,31 @@ namespace Plot
 			CheckAspect();
 
 			axis.Thaw();
+			mode = AxisMode.Auto;
 		}
 		
 		private void RecalculateXAxis()
 		{
-			RecalculateAxis(d_xaxisMode, d_xaxis, d_autoMargin.X, a => a.XRange);
+			RecalculateAxis(ref d_xaxisMode, d_xaxis, d_autoMargin.X, a => a.XRange);
 		}
 		
 		private void RecalculateYAxis()
 		{
-			RecalculateAxis(d_yaxisMode, d_yaxis, d_autoMargin.Y, a => a.YRange);
+			RecalculateAxis(ref d_yaxisMode, d_yaxis, d_autoMargin.Y, a => a.YRange);
 		}
 
 		private void HandleRendererXRangeChanged(object sender, EventArgs e)
 		{
-			RecalculateXAxis();			
+			RecalculateXAxis();
 			UpdateDataRange(d_renderersXRange, a => a.XRange);
 		}
 		
-		private void AxisModeChanged(AxisMode mode, Range<double> range, Range<double> dataRange, double margin)
+		private void AxisModeChanged(ref AxisMode mode, Range<double> range, Range<double> dataRange, double margin)
 		{
 			if (mode == AxisMode.Auto)
 			{
 				range.Update(dataRange.Widen(margin));
+				mode = AxisMode.Auto;
 			}
 		}
 		
@@ -845,6 +838,8 @@ namespace Plot
 					d_renderers[prev].HasRuler = true;
 				}
 			}
+			
+			UpdateColors();
 
 			Redraw();
 		}
