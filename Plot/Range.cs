@@ -14,6 +14,10 @@ namespace Plot
 			d_max = max;
 		}
 		
+		public Range(Range<T> other) : this(other.Min, other.Max)
+		{
+		}
+		
 		public Range() : this(default(T), default(T))
 		{
 		}

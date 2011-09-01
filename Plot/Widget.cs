@@ -3,9 +3,22 @@ using System.Collections.Generic;
 
 namespace Plot
 {
-	[Gtk.Binding(Gdk.Key.R, Gdk.ModifierType.ControlMask, "AutoAxis")]
+	[Gtk.Binding(Gdk.Key.R, Gdk.ModifierType.ControlMask, "AutoAxis"),
+	 Gtk.Binding(Gdk.Key.Escape, Gdk.ModifierType.None, "UndoLastZoom")]
 	public class Widget : Gtk.DrawingArea
 	{
+		private struct Ranges
+		{
+			public Range<double> XRange;
+			public Range<double> YRange;
+			
+			public Ranges(Range<double> xrange, Range<double> yrange)
+			{
+				XRange = new Range<double>(xrange);
+				YRange = new Range<double>(yrange);
+			}
+		}
+
 		private Graph d_graph;
 		private Point<double> d_button;
 		private Point<double> d_lastMove;
@@ -16,6 +29,7 @@ namespace Plot
 		private Point<double> d_selectStart;
 		private Point<double> d_selectEnd;
 		private Gtk.ActionGroup d_popupActions;
+		private Stack<Ranges> d_zoomstack;
 		
 		public delegate void PopulatePopupHandler(object source, Gtk.UIManager manager);
 		public event PopulatePopupHandler PopulatePopup = delegate {};
@@ -32,6 +46,7 @@ namespace Plot
 			d_enableSelect = true;
 
 			d_zoomFactor = 1.25;
+			d_zoomstack = new Stack<Ranges>();
 			
 			CanFocus = true;
 			
@@ -171,7 +186,7 @@ namespace Plot
 			{
 				hasy = 1;
 			}
-				
+			
 			d_graph.ZoomAt(pt, factor * hasx, factor * hasy);
 			
 			return true;
@@ -466,6 +481,8 @@ namespace Plot
 				d_button = new Plot.Point<double>(evnt.X, evnt.Y);
 				d_lastMove = new Plot.Point<double>(0, 0);
 				
+				d_zoomstack.Push(new Ranges(d_graph.XAxis, d_graph.YAxis));
+				
 				return true;
 			}
 			else if (d_enableSelect && evnt.Button == 1)
@@ -495,6 +512,8 @@ namespace Plot
 
 					Point<double> pt1 = d_graph.PixelToAxis(new Point<double>(r.X, r.Y));
 					Point<double> pt2 = d_graph.PixelToAxis(new Point<double>(r.X + r.Width, r.Y + r.Height));
+					
+					d_zoomstack.Push(new Ranges(d_graph.XAxis, d_graph.YAxis));
 					
 					d_graph.UpdateAxis(new Range<double>(pt1.X, pt2.X),
 					                   new Range<double>(pt2.Y, pt1.Y));
@@ -568,6 +587,18 @@ namespace Plot
 		protected override bool OnPopupMenu()
 		{
 			return true;
+		}
+		
+		private void UndoLastZoom()
+		{
+			if (d_zoomstack.Count == 0)
+			{
+				return;
+			}
+			
+			Ranges r = d_zoomstack.Pop();
+			
+			d_graph.UpdateAxis(r.XRange, r.YRange);
 		}
 		
 		public void AutoAxis()
