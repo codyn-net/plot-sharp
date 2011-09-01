@@ -41,6 +41,11 @@ namespace Plot
 		
 		public Settings()
 		{
+			Revert();
+		}
+		
+		public void Revert()
+		{
 			ShowAxis = true;
 			ShowLabels = true;
 			ShowXTicks = true;
