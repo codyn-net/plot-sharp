@@ -254,14 +254,15 @@ namespace Plot
 		protected override bool OnScrollEvent(Gdk.EventScroll evnt)
 		{
 			Gdk.ModifierType state = Gtk.Accelerator.DefaultModMask & evnt.State;
+			bool ret = base.OnScrollEvent(evnt);
 
 			if (state == Gdk.ModifierType.Mod1Mask)
 			{
-				return SwitchRuler(evnt.Direction == Gdk.ScrollDirection.Up);
+				return SwitchRuler(evnt.Direction == Gdk.ScrollDirection.Up) || ret;
 			}
 			else
 			{
-				return Zoom(evnt.X, evnt.Y, evnt.Direction == Gdk.ScrollDirection.Up, evnt.State);
+				return Zoom(evnt.X, evnt.Y, evnt.Direction == Gdk.ScrollDirection.Up, evnt.State) || ret;
 			}
 		}
 		
@@ -270,7 +271,7 @@ namespace Plot
 			d_graph.Ruler = null;
 			GdkWindow.Cursor = null;
 
-			return true;
+			return base.OnLeaveNotifyEvent(evnt);
 		}
 		
 		protected override bool OnEnterNotifyEvent(Gdk.EventCrossing evnt)
@@ -286,8 +287,8 @@ namespace Plot
 				GdkWindow.Cursor = new Gdk.Cursor(Gdk.CursorType.Hand2);
 				d_graph.Ruler = null;
 			}
-
-			return true;
+			
+			return base.OnEnterNotifyEvent(evnt);
 		}
 		
 		protected override bool OnMotionNotifyEvent(Gdk.EventMotion evnt)
@@ -333,7 +334,7 @@ namespace Plot
 				GdkWindow.Cursor = null;
 			}
 
-			return false;
+			return base.OnMotionNotifyEvent(evnt);
 		}
 		
 		protected override void OnSizeAllocated(Gdk.Rectangle allocation)
@@ -494,7 +495,7 @@ namespace Plot
 				DoPopup(evnt);
 			}
 			
-			return false;
+			return base.OnButtonPressEvent(evnt);
 		}
 		
 		protected override bool OnButtonReleaseEvent(Gdk.EventButton evnt)
@@ -534,7 +535,7 @@ namespace Plot
 				QueueDraw();
 			}
 
-			return false;
+			return base.OnButtonReleaseEvent(evnt);;
 		}
 		
 		private void DrawSelection(Cairo.Context ctx)
