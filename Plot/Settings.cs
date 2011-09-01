@@ -36,6 +36,8 @@ namespace Plot
 		public AxisMode XAxisMode { get; set; }
 		public AxisMode YAxisMode { get; set; }
 		public Point<double> AutoMargin { get; set; }
+		public Range<double> XAxis { get; set; }
+		public Range<double> YAxis { get; set; }
 		
 		public Settings()
 		{
@@ -53,6 +55,9 @@ namespace Plot
 			YAxisMode = AxisMode.Auto;
 			
 			AutoMargin = new Point<double>(0, 0.05);
+			
+			XAxis = new Range<double>(-1, 1);
+			YAxis = new Range<double>(-1, 1);
 			
 			AxisAspect = 1;
 			
@@ -133,6 +138,10 @@ namespace Plot
 			graph.AxisAspect = AxisAspect;
 			graph.Antialias = Antialias;
 			graph.SnapRulerToData = SnapRulerToData;
+			
+			graph.XAxis.Update(XAxis);
+			graph.YAxis.Update(XAxis);
+
 			graph.XAxisMode = XAxisMode;
 			graph.YAxisMode = YAxisMode;
 
@@ -168,6 +177,9 @@ namespace Plot
 			SnapRulerToData = graph.SnapRulerToData;
 			XAxisMode = graph.XAxisMode;
 			YAxisMode = graph.YAxisMode;
+			
+			XAxis.Update(graph.XAxis);
+			YAxis.Update(graph.YAxis);
 			
 			AxisColor = graph.AxisColor.Hex;
 			BackgroundColor = graph.BackgroundColor.Hex;
