@@ -472,9 +472,11 @@ namespace Plot
 		{
 			Gdk.ModifierType mod = evnt.State & Gtk.Accelerator.DefaultModMask;
 			
+			GrabFocus();
+			
 			if (mod != 0)
 			{
-				return false;
+				return base.OnButtonPressEvent(evnt);
 			}
 
 			if (d_enableMove && evnt.Button == 2)
