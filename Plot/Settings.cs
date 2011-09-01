@@ -73,12 +73,12 @@ namespace Plot
 			BackgroundColor = (new Color(1, 1, 1)).Hex;
 			
 			RulerColor = (new Color(0.5, 0.5, 0.5)).Hex;
-			RulerLabelColorsBg = (new Color(1, 1, 1)).Hex;
+			RulerLabelColorsBg = (new Color(1, 1, 1, 0.8)).Hex;
 			RulerLabelColorsFg = (new Color(0.5, 0.5, 0.5)).Hex;
 			GridColor = (new Color(0.95, 0.95, 0.95)).Hex;
 
 			AxisLabelColorsFg = (new Color(0, 0, 0)).Hex;
-			AxisLabelColorsBg = (new Color(1, 1, 1)).Hex;
+			AxisLabelColorsBg = (new Color(1, 1, 1, 0.8)).Hex;
 		}
 		
 		public Settings(Graph graph) : this()
