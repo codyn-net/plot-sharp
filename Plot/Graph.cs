@@ -1925,6 +1925,18 @@ namespace Plot
 			d_dimensions = dims;
 		}
 		
+		public Rectangle<double> RendererRegion(Renderers.Renderer renderer)
+		{
+			Renderers.ILabeled lbl = renderer as Renderers.ILabeled;
+			
+			if (lbl == null)
+			{
+				return null;
+			}
+			
+			return d_labelRegions[lbl].Copy();
+		}
+		
 		public void Draw(Cairo.Context ctx)
 		{
 			if (d_recreate)
