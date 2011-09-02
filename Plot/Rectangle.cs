@@ -12,6 +12,10 @@ namespace Plot
 		
 		public event EventHandler Resized = delegate {};
 		public event EventHandler Moved = delegate {};
+		
+		public Rectangle(Rectangle<T> other) : this(other.X, other.Y, other.Width, other.Height)
+		{
+		}
 
 		public Rectangle(T x, T y, T width, T height)
 		{
@@ -23,6 +27,11 @@ namespace Plot
 		
 		public Rectangle() : this(default(T), default(T), default(T), default(T))
 		{
+		}
+		
+		public Rectangle<T> Copy()
+		{
+			return new Rectangle<T>(this);
 		}
 		
 		public void Update(T x, T y, T width, T height)
