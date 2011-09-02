@@ -336,7 +336,7 @@ namespace Plot
 
 			return base.OnMotionNotifyEvent(evnt);
 		}
-		
+
 		protected override void OnSizeAllocated(Gdk.Rectangle allocation)
 		{
 			base.OnSizeAllocated(allocation);
@@ -368,8 +368,8 @@ namespace Plot
 				{
 					return false;
 				}
-
-				return !(d_selectStart.X == d_selectEnd.X || d_selectStart.Y == d_selectEnd.Y);
+				
+				return Gtk.Drag.CheckThreshold(this, (int)d_selectStart.X, (int)d_selectStart.Y, (int)d_selectEnd.X, (int)d_selectEnd.Y);
 			}
 		}
 		
