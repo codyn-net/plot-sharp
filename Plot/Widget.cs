@@ -738,35 +738,44 @@ namespace Plot
 			dlg.Present();
 		}
 		
+		private void FileExport(Type exporterType, string filename)
+		{
+			System.Reflection.ConstructorInfo info;
+
+			info = exporterType.GetConstructor(new Type[] {typeof(string), typeof(int), typeof(int)});
+			
+			Export.Exporter ex = (Export.Exporter)info.Invoke(new object[] {filename, d_graph.Dimensions.Width, d_graph.Dimensions.Height});
+			
+			ex.Do(() => {
+				ex.Export(d_graph, new Rectangle<int>(0, 0, ex.Width, ex.Height));
+			});
+		}
+		
 		private void OnActionExportPdf(object source, EventArgs args)
 		{
 			ExportFilename("pdf", delegate (string filename) {
-				Export.Pdf exporter = new Export.Pdf(d_graph, filename);
-				exporter.Export();
+				FileExport(typeof(Export.Pdf), filename);
 			});
 		}
 		
 		private void OnActionExportPs(object source, EventArgs args)
 		{
 			ExportFilename("ps", delegate (string filename) {
-				Export.Ps exporter = new Export.Ps(d_graph, filename);
-				exporter.Export();
+				FileExport(typeof(Export.Ps), filename);
 			});
 		}
 		
 		private void OnActionExportSvg(object source, EventArgs args)
 		{
 			ExportFilename("svg", delegate (string filename) {
-				Export.Svg exporter = new Export.Svg(d_graph, filename);
-				exporter.Export();
+				FileExport(typeof(Export.Svg), filename);
 			});
 		}
 		
 		private void OnActionExportPng(object source, EventArgs args)
 		{
 			ExportFilename("png", delegate (string filename) {
-				Export.Png exporter = new Export.Png(d_graph, filename);
-				exporter.Export();
+				FileExport(typeof(Export.Png), filename);
 			});
 		}
 	}
