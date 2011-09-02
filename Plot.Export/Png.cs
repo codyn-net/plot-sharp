@@ -6,22 +6,20 @@ namespace Plot.Export
 	{
 		private string d_filename;
 
-		public Png(Graph graph, string filename) : base(graph)
+		public Png(string filename, int width, int height) : base(width, height)
 		{
 			d_filename = filename;
 		}
 		
-		public override void Export()
+		protected override Cairo.Surface CreateSurface()
 		{
-			Cairo.ImageSurface png = new Cairo.ImageSurface(Cairo.Format.ARGB32, Dimensions.Width, Dimensions.Height);
-
-			using (Cairo.Context ctx = new Cairo.Context(png))
-			{
-				Graph.DrawTo(ctx, Dimensions);
-			}
-			
-			png.WriteToPng(d_filename);			
-			png.Destroy();
+			return new Cairo.ImageSurface(Cairo.Format.ARGB32, Width, Height);
+		}
+		
+		public override void End()
+		{
+			Surface.WriteToPng(d_filename);
+			base.End();
 		}
 	}
 }

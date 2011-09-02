@@ -6,22 +6,15 @@ namespace Plot.Export
 	{
 		private string d_filename;
 
-		public Pdf(Graph graph, string filename) : base(graph)
+		public Pdf(string filename, int width, int height) : base(width, height)
 		{
 			d_filename = filename;
 		}
 		
-		public override void Export()
+		protected override Cairo.Surface CreateSurface()
 		{
-			Cairo.PdfSurface pdf = new Cairo.PdfSurface(d_filename, Dimensions.Width, Dimensions.Height);
-			
-			using (Cairo.Context ctx = new Cairo.Context(pdf))
-			{
-				Graph.DrawTo(ctx, Dimensions);
-			}
-			
-			pdf.Destroy();
-		}
+			return new Cairo.PdfSurface(d_filename, Width, Height);
+		}		
 	}
 }
 

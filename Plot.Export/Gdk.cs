@@ -7,23 +7,22 @@ namespace Plot.Export
 	{
 		private GGdk.Drawable d_drawable;
 
-		public Gdk(Graph graph, GGdk.Drawable drawable) : base(graph)
+		public Gdk(GGdk.Drawable drawable)
 		{
 			d_drawable = drawable;
 			
-			int w;
-			int h;
+			int width;
+			int height;
 			
-			drawable.GetSize(out w, out h);
-			Dimensions.Update(0, 0, w, h);
+			d_drawable.GetSize(out width, out height);
+			
+			Width = width;
+			Height = height;
 		}
 		
-		public override void Export()
+		protected override Cairo.Context CreateContext()
 		{
-			using (Cairo.Context ctx = GGdk.CairoHelper.Create(d_drawable))
-			{
-				Graph.DrawTo(ctx, Dimensions);
-			}
+			return GGdk.CairoHelper.Create(d_drawable);
 		}
 	}
 }

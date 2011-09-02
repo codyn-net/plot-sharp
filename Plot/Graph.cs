@@ -1874,12 +1874,39 @@ namespace Plot
 			d_dimensions = dimensions;
 			
 			ctx.Rectangle(dims.X, dims.Y, dims.Width, dims.Height);
+			
+			d_backgroundColor.Set(ctx);
+			ctx.FillPreserve();
 			ctx.Clip();
 
 			SetAntialias(ctx);
 			
-			ctx.Save();			
+			// First the axises (and ticks)
+			ctx.Save();
+			DrawXAxis(ctx);
+			ctx.Restore();
+			
+			ctx.Save();
+			DrawYAxis(ctx);
+			ctx.Restore();
+
+			// Then all the renderers
+			ctx.Save();
 			DrawRenderers(ctx);
+			ctx.Restore();
+			
+			// And then the axis labels
+			ctx.Save();
+			DrawAllXLabels(ctx);
+			ctx.Restore();
+			
+			ctx.Save();
+			DrawAllYLabels(ctx);
+			ctx.Restore();
+			
+			// Paint label
+			ctx.Save();
+			DrawLabels(ctx);
 			ctx.Restore();
 						
 			bool showRuler = d_showRuler;
