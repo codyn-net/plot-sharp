@@ -478,21 +478,25 @@ namespace Plot
 			{
 				return base.OnButtonPressEvent(evnt);
 			}
+			
+			Plot.Point<double> pt = new Point<double>(evnt.X, evnt.Y);
 
 			if (d_enableMove && evnt.Button == 2)
 			{
-				d_button = new Plot.Point<double>(evnt.X, evnt.Y);
+				d_button = pt;
 				d_lastMove = new Plot.Point<double>(0, 0);
 				
 				d_zoomstack.Push(new Ranges(d_graph.XAxis, d_graph.YAxis));
 				
 				return true;
 			}
-			else if (d_enableSelect && evnt.Button == 1)
+			
+			if (d_enableSelect && evnt.Button == 1)
 			{
-				d_selectStart = new Point<double>(evnt.X, evnt.Y);
+				d_selectStart = pt;
 			}
-			else if (evnt.Button == 3)
+			
+			if (evnt.Button == 3)
 			{
 				DoPopup(evnt);
 			}
@@ -509,7 +513,7 @@ namespace Plot
 			}
 			else if (d_selectStart != null)
 			{
-				if (evnt.Button == 1 && ValidSelection)
+				if (d_enableSelect && evnt.Button == 1 && ValidSelection)
 				{
 					Rectangle<double> r = NormalizedSelection;
 
@@ -536,8 +540,8 @@ namespace Plot
 				
 				QueueDraw();
 			}
-
-			return base.OnButtonReleaseEvent(evnt);;
+			
+			return false;
 		}
 		
 		private void DrawSelection(Cairo.Context ctx)
