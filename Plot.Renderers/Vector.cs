@@ -32,7 +32,7 @@ namespace Plot.Renderers
 			d_drawArrowHead = true;
 			d_arrowHeadSize = -1;
 			
-			ShowLine = false;
+			LineStyle = Line.LineType.None;
 		}
 		
 		public bool ShowArrowHead

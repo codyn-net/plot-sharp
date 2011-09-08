@@ -16,6 +16,14 @@ namespace Plot.Renderers
 			FilledSquare,
 			FilledTriangle,
 		}
+		
+		public enum LineType
+		{
+			None,
+			Single,
+			Dashed,
+			Dotted
+		}
 
 		private List<Point<double>> d_data;
 		private SortedList<Point<double>> d_sortedData;
@@ -28,9 +36,10 @@ namespace Plot.Renderers
 		
 		private double d_markerSize;
 		private MarkerType d_markerStyle;
-		private bool d_showLine;
 		private static Point<double> s_triangleDxDy;
 		private static IComparer<Point<double>> s_pointComparer;
+		
+		private LineType d_lineType;
 		
 		private delegate void MarkerRenderFunc(Cairo.Context context, Point<double> scale, Point<double> item, int idx);
 		private MarkerRenderFunc d_markerRenderer;
@@ -53,9 +62,10 @@ namespace Plot.Renderers
 			
 			d_sortedData = null;
 			
-			d_markerStyle = MarkerType.None;
+			MarkerStyle = MarkerType.None;
 			d_markerSize = 5;
-			d_showLine = true;
+			
+			d_lineType = Line.LineType.Single;
 			
 			UpdateRanges();
 			
@@ -85,6 +95,22 @@ namespace Plot.Renderers
 		
 		public Line() : this("")
 		{
+		}
+		
+		public LineType LineStyle
+		{
+			get
+			{
+				return d_lineType;
+			}
+			set
+			{
+				if (d_lineType != value)
+				{
+					d_lineType = value;
+					EmitChanged();
+				}
+			}
 		}
 
 		public MarkerType MarkerStyle
@@ -179,7 +205,7 @@ namespace Plot.Renderers
 			
 			other.d_markerSize = d_markerSize;
 			other.MarkerStyle = d_markerStyle;
-			other.d_showLine = d_showLine;
+			other.d_lineType = d_lineType;
 			
 			return other;
 		}
@@ -454,22 +480,6 @@ namespace Plot.Renderers
 				}
 			}
 		}
-
-		public bool ShowLine
-		{
-			get
-			{
-				return d_showLine;
-			}
-			set
-			{
-				if (d_showLine != value)
-				{
-					d_showLine = value;
-					EmitChanged();
-				}
-			}
-		}
 		
 		private void MakeCircle(Cairo.Context context, Point<double> scale, Point<double> item, int idx)
 		{
@@ -556,8 +566,14 @@ namespace Plot.Renderers
 			context.Stroke();
 		}
 		
-		private void RenderMarkers(Cairo.Context context, Point<double> scale, int idx, int length)
+		protected void RenderMarkers(Cairo.Context context, Point<double> scale, int idx, int length)
 		{
+			if (d_markerRenderer == null)
+			{
+				return;
+			}
+			
+			context.Save();
 			d_color.Set(context);
 			context.LineWidth = LineWidth;
 
@@ -568,14 +584,36 @@ namespace Plot.Renderers
 				d_markerRenderer(context, scale, item, curidx);
 				curidx++;
 			}
+			
+			context.Restore();
 		}
 		
-		private void RenderLine(Cairo.Context context, Point<double> scale, int idx, int length)
+		protected void SetLineStyle(Cairo.Context context)
+		{
+			d_color.Set(context);
+			context.LineWidth = d_lineWidth;
+			
+			switch (d_lineType)
+			{
+				case LineType.Single:
+					context.SetDash(new double[] {}, 0);
+				break;
+				case LineType.Dotted:
+					context.SetDash(new double[] {d_lineWidth, d_lineWidth * 2}, 0);
+				break;
+				case LineType.Dashed:
+					context.SetDash(new double[] {d_lineWidth * 4, d_lineWidth * 4}, 0);
+				break;
+			}
+		}
+		
+		protected void RenderLine(Cairo.Context context, Point<double> scale, int idx, int length)
 		{
 			bool first = true;
 			
-			d_color.Set(context);
-			context.LineWidth = d_lineWidth;
+			context.Save();
+			
+			SetLineStyle(context);
 			
 			foreach (Point<double> item in Range(idx, length))
 			{
@@ -591,11 +629,12 @@ namespace Plot.Renderers
 			}
 
 			context.Stroke();
+			context.Restore();
 		}
 		
 		public override void Render(Cairo.Context context, Point<double> scale)
 		{
-			if (d_showLine)
+			if (d_lineType != Line.LineType.None)
 			{
 				RenderLine(context, scale, 0, d_data.Count);
 			}
