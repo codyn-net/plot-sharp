@@ -39,6 +39,9 @@ namespace Plot
 		private bool d_recreate;
 		private bool d_checkingAspect;
 		
+		private Point<double> d_previousAxisSpan;
+		private Point<double> d_previousAxisOrigin;
+		
 		private Dictionary<Renderers.ILabeled, Rectangle<double>> d_labelRegions;
 		
 		// User configurable
@@ -61,6 +64,9 @@ namespace Plot
 		
 		private ColorMap d_colorMap;
 		private bool d_antialias;
+		
+		private Cairo.Surface d_overlayBuffer;
+		private Cairo.Surface d_smoothBuffer;
 		
 		public event RequestSurfaceHandler RequestSurface = delegate {};
 		public event EventHandler RequestRedraw = delegate {};
@@ -103,6 +109,7 @@ namespace Plot
 			d_labelRegions = new Dictionary<Renderers.ILabeled, Rectangle<double>>();
 			
 			d_xaxis.Changed += delegate {
+				Console.WriteLine(d_xaxis);
 				CheckAspect();
 				
 				UpdateXTicks();
@@ -112,8 +119,6 @@ namespace Plot
 			};
 			
 			d_yaxis.Changed += delegate {
-				d_recreate = true;
-				
 				CheckAspect();
 				
 				UpdateYTicks();
@@ -129,6 +134,8 @@ namespace Plot
 
 				RemoveBuffer(d_backbuffer, 0);
 				RemoveBuffer(d_backbuffer, 1);
+				RemoveBuffer(ref d_overlayBuffer);
+				RemoveBuffer(ref d_smoothBuffer);
 				
 				UpdateXTicks();
 				UpdateYTicks();
@@ -142,7 +149,7 @@ namespace Plot
 				UpdateXTicks();
 				UpdateYTicks();
 
-				Redraw();
+				EmitRequestRedraw();
 			};
 			
 			d_backbuffer = new Cairo.Surface[2] {null, null};
@@ -160,7 +167,7 @@ namespace Plot
 			d_gridColor.Changed += RedrawWhenChanged;
 		}
 		
-		public Graph() : this(new Range<double>(-1, 1), new Range<double>(1, -1))
+		public Graph() : this(new Range<double>(0, 1), new Range<double>(-1, 1))
 		{
 		}
 		
@@ -168,6 +175,8 @@ namespace Plot
 		{
 			RemoveBuffer(d_backbuffer, 0);
 			RemoveBuffer(d_backbuffer, 1);
+			RemoveBuffer(ref d_overlayBuffer);
+			RemoveBuffer(ref d_smoothBuffer);
 		}
 		
 		public ColorMap ColorMap
@@ -780,7 +789,11 @@ namespace Plot
 		{
 			if (mode == AxisMode.Auto)
 			{
-				range.Update(dataRange.Widen(margin));
+				if (d_renderers.Count > 0)
+				{
+					range.Update(dataRange.Widen(margin));
+				}
+
 				mode = AxisMode.Auto;
 			}
 		}
@@ -1361,68 +1374,15 @@ namespace Plot
 
 		private void RedrawUnprocessed(int num)
 		{
-			/* TODO
-			if (d_backbuffer[d_currentBuffer] == null)
-			{
-				return;
-			}
-			
-			Cairo.Surface prev = d_backbuffer[d_currentBuffer];
-			Cairo.Surface buf = SwapBuffer();
-			
-			Range<double> xrange = new Range<double>(d_renderers[0][d_renderers[0].Count - num].X,
-			                                         d_renderers[0][d_renderers[0].Count - 1].X);
-			
-			using (Cairo.Context ctx = new Cairo.Context(buf))
-			{
-				// Draw old backbuffer on it, shifted
-				int offset = 0;
-				Point<double> scale = Scale;
-
-				if (xrange.Max > d_xaxis.Max)
-				{
-					double extra = xrange.Max - d_xaxis.Max;
-					offset = (int)Math.Ceiling(extra * scale.X);
-					
-					d_xaxis.Shift(offset / scale.X);
-				}
-				
-				double clipwidth = Math.Ceiling((d_renderers[0][d_renderers[0].Count - num - 2].X - d_xaxis.Min) * scale.X);
-				
-				ctx.Save();
-				ctx.Rectangle(-0.5, -0.5, clipwidth, d_dimensions.Height + 1);
-				ctx.Clip();
-
-				ctx.SetSourceSurface(prev, -offset, 0);
-				ctx.Paint();
-				ctx.Restore();
-				
-				ctx.Save();
-				ctx.Rectangle(clipwidth - 0.5, 0, d_dimensions.Width, d_dimensions.Height);
-				ctx.Clip();
-				
-				xrange.Min = d_xaxis.Min + (clipwidth / scale.X) - SampleWidth() * 20;
-				
-				// draw the points we now need to draw, according to new shift
-				Prepare(ctx);
-				
-				foreach (Renderers.Renderer renderer in d_renderers)
-				{
-					renderer.Render(ctx, Scale, d_renderers[0].Count - num - 4);
-				}
-				
-				ctx.Restore();
-			}
-			
-			EmitRequestRedraw();*/
 		}
 
 		private void ClearBuffer(Cairo.Surface buf)
 		{
 			using (Cairo.Context ctx = new Cairo.Context(buf))
 			{
-				d_backgroundColor.Set(ctx);
-				ctx.Paint();
+				ctx.Operator = Cairo.Operator.Clear;
+				ctx.Rectangle(0, 0, d_dimensions.Width, d_dimensions.Height);
+				ctx.Fill();
 			}
 		}
 		
@@ -1437,6 +1397,16 @@ namespace Plot
 			else
 			{
 				ClearBuffer(d_backbuffer[neg]);
+			}
+
+			if (d_overlayBuffer == null)
+			{
+				d_overlayBuffer = CreateBuffer();
+			}
+			
+			if (d_smoothBuffer == null)
+			{
+				d_smoothBuffer = CreateBuffer();
 			}
 			
 			d_currentBuffer = neg;
@@ -1478,6 +1448,15 @@ namespace Plot
 			}
 		}
 		
+		private void RemoveBuffer(ref Cairo.Surface surface)
+		{
+			if (surface != null)
+			{
+				surface.Destroy();
+				surface = null;
+			}
+		}
+		
 		private void RemoveBuffer(Cairo.Surface[] surfaces, int idx)
 		{
 			if (surfaces[idx] == null)
@@ -1503,6 +1482,92 @@ namespace Plot
 			}
 		}
 		
+		private void ClipForPixel(Cairo.Context ctx, Cairo.Surface old)
+		{
+			// Can't do this if we don't have a previous buffer, or pixel dimensions
+			if (old == null || d_previousAxisSpan == null)
+			{
+				return;
+			}
+			
+			// Also only can do this when moving, not scaling
+			if (Math.Abs(d_previousAxisSpan.X - d_xaxis.Span()) > 1e-6 ||
+			    Math.Abs(d_previousAxisSpan.Y - d_yaxis.Span()) > 1e-6)
+			{
+				return;
+			}
+			
+			Point<double> s = Scale;
+			
+			// Determine the shift in pixels
+			double shiftX = (d_previousAxisOrigin.X - d_xaxis.Min) * s.X;
+			double shiftY = (d_previousAxisOrigin.Y - d_yaxis.Min) * s.Y;
+			
+			// We can only shift when we are shifting an integer number of pixels
+			if (Math.Abs(Math.Round(shiftX) - shiftX) % 1 > 1e-6 || Math.Abs(Math.Round(shiftY) - shiftY) % 1 > 1e-6)
+			{
+				return;
+			}
+			
+			// Blit the old surface into ctx, according to the shift in dimensions
+			ctx.Save();
+			
+			int dx = (int)Math.Round(shiftX);
+			int dy = (int)Math.Round(shiftY);
+			
+			old.Show(ctx,
+			         d_dimensions.X + dx,
+			         d_dimensions.Y - dy);
+						
+			ctx.Restore();
+			
+			// Then setup the clip region
+			if (dx < 0)
+			{
+				// Shifted to the left, clip on the right
+				ctx.Rectangle(d_dimensions.X + d_dimensions.Width + dx - 1,
+				              d_dimensions.Y - 1,
+				              -dx + 2,
+				              d_dimensions.Height + 2);
+			}
+			else if (dx > 0)
+			{
+				// Shifted to the right, clip on the left
+				ctx.Rectangle(d_dimensions.X - 1,
+				              d_dimensions.Y - 1,
+				              dx + 2,
+				              d_dimensions.Height + 2);
+			}
+			
+			if (dy < 0)
+			{
+				// Shifted to the top, clip the bottom
+				ctx.Rectangle(d_dimensions.X - 1,
+				              d_dimensions.Y - 1,
+				              d_dimensions.Width + 2,
+				              -dy + 2);
+			}
+			else if (dy > 0)
+			{
+				// Shifted to the bottom, clip the top
+				ctx.Rectangle(d_dimensions.X - 1,
+				              d_dimensions.Y + d_dimensions.Height - dy - 1,
+				              d_dimensions.Width + 2,
+				              dy + 2);
+			}
+			
+			if (dx != 0 || dy != 0)
+			{
+				Cairo.Operator op = ctx.Operator;
+				
+				ctx.Operator = Cairo.Operator.Clear;
+				ctx.ClipPreserve();
+				ctx.Fill();
+				
+				ctx.Operator = op;
+			}
+		}
+		
 		private void Recreate()
 		{
 			d_recreate = false;
@@ -1516,36 +1581,38 @@ namespace Plot
 			
 			using (Cairo.Context ctx = new Cairo.Context(buf))
 			{
-				// First the axises (and ticks)
-				SetAntialias(ctx);
+				ctx.Rectangle(d_dimensions.X - 0.5, d_dimensions.Y - 0.5, d_dimensions.Width + 1, d_dimensions.Height + 1);
+				ctx.Clip();
 
-				ctx.Save();
-				DrawXAxis(ctx);
-				ctx.Restore();
-				
-				ctx.Save();
-				DrawYAxis(ctx);
-				ctx.Restore();
+				// Setup clipping area according to the pixel dimensions
+				//ClipForPixel(ctx, d_backbuffer[d_currentBuffer == 1 ? 0 : 1]);
+
+				SetAntialias(ctx);
 
 				// Then all the renderers
 				ctx.Save();
 				DrawRenderers(ctx);
 				ctx.Restore();
-				
-				// And then the axis labels
-				ctx.Save();
-				DrawAllXLabels(ctx);
-				ctx.Restore();
-				
-				ctx.Save();
-				DrawAllYLabels(ctx);
-				ctx.Restore();
-				
-				// Paint label
-				ctx.Save();
-				DrawLabels(ctx);
-				ctx.Restore();
 			}
+			
+			if (HasOverlayBuffer)
+			{
+				using (Cairo.Context ctx = new Cairo.Context(d_overlayBuffer))
+				{
+					Cairo.Operator op = ctx.Operator;
+
+					ctx.Operator = Cairo.Operator.Clear;
+					ctx.Rectangle(0, 0, d_dimensions.Width, d_dimensions.Height);
+					ctx.Fill();
+					
+					ctx.Operator = op;
+					
+					DrawOverlayBuffer(ctx);
+				}
+			}
+			
+			d_previousAxisSpan = new Point<double>(d_xaxis.Span(), d_yaxis.Span());
+			d_previousAxisOrigin = new Point<double>(d_xaxis.Min, d_yaxis.Min);
 		}
 		
 		private void DrawRuler(Cairo.Context ctx)
@@ -1845,10 +1912,49 @@ namespace Plot
 			}
 		}
 		
+		private void DrawOverlayBuffer(Cairo.Context ctx)
+		{
+			SetAntialias(ctx);
+
+			// And then the axis labels
+			ctx.Save();
+			DrawAllXLabels(ctx);
+			ctx.Restore();
+			
+			ctx.Save();
+			DrawAllYLabels(ctx);
+			ctx.Restore();
+			
+			// Paint label
+			ctx.Save();
+			DrawLabels(ctx);
+			ctx.Restore();
+		}
+		
+		private bool HasOverlayBuffer
+		{
+			get
+			{
+				return d_overlayBuffer != null && d_overlayBuffer.Content == Cairo.Content.ColorAlpha;
+			}
+		}
+		
 		private void DrawOverlay(Cairo.Context ctx)
 		{
 			ctx.Save();
-
+			
+			if (HasOverlayBuffer)
+			{
+				ctx.Save();
+				ctx.SetSourceSurface(d_overlayBuffer, d_dimensions.X, d_dimensions.Y);
+				ctx.Paint();
+				ctx.Restore();
+			}
+			else
+			{
+				DrawOverlayBuffer(ctx);
+			}
+			
 			if (d_showRuler)
 			{
 				DrawRuler(ctx);
@@ -1915,6 +2021,11 @@ namespace Plot
 			d_showBox = true;
 			d_showRuler = false;
 
+			if (HasOverlayBuffer)
+			{
+				DrawOverlayBuffer(ctx);
+			}
+			
 			DrawOverlay(ctx);
 			
 			ctx.Restore();
@@ -1943,15 +2054,28 @@ namespace Plot
 			{
 				Recreate();
 			}
-			
+
 			if (d_backbuffer[d_currentBuffer] == null)
 			{
 				return;
 			}
 			
+			d_backgroundColor.Set(ctx);
+			ctx.Rectangle(d_dimensions.X - 0.5, d_dimensions.Y - 0.5, d_dimensions.Width + 1, d_dimensions.Height + 1);
+			ctx.ClipPreserve();
+			ctx.Fill();
+			
+			// First the axis (and ticks)
 			ctx.Save();
-			ctx.SetSourceSurface(d_backbuffer[d_currentBuffer], d_dimensions.X, d_dimensions.Y);
-			ctx.Paint();
+			DrawXAxis(ctx);
+			ctx.Restore();
+				
+			ctx.Save();
+			DrawYAxis(ctx);
+			ctx.Restore();
+			
+			ctx.Save();
+			d_backbuffer[d_currentBuffer].Show(ctx, d_dimensions.X, d_dimensions.Y);
 			ctx.Restore();
 
 			DrawOverlay(ctx);
@@ -2024,6 +2148,13 @@ namespace Plot
 			
 			d_xaxis.Thaw();
 			d_yaxis.Thaw();
+		}
+		
+		public bool LabelHitTest(Point<double> pos)
+		{
+			Renderers.Renderer renderer;
+			
+			return LabelHitTest(pos, out renderer);
 		}
 		
 		public bool LabelHitTest(Point<double> pos, out Renderers.Renderer renderer)
