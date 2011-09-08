@@ -61,7 +61,7 @@ namespace Plot
 			
 			AutoMargin = new Point<double>(0, 0.05);
 			
-			XAxis = new Range<double>(-1, 1);
+			XAxis = new Range<double>(0, 1);
 			YAxis = new Range<double>(-1, 1);
 			
 			AxisAspect = 1;
