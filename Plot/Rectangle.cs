@@ -71,6 +71,31 @@ namespace Plot
 			return EqualityComparer<T>.Default.Equals(a, b);
 		}
 		
+		public override bool Equals(object obj)
+		{
+			if (obj == null)
+			{
+				return false;
+			}
+			
+			Rectangle<T> other = obj as Rectangle<T>;
+			
+			if (other == null)
+			{
+				return false;
+			}
+			
+			return Eq(d_x, other.d_x) &&
+			       Eq(d_y, other.d_y) &&
+			       Eq(d_width, other.d_width) &&
+			       Eq(d_height, other.d_height);
+		}
+		
+		public override int GetHashCode()
+		{
+			return base.GetHashCode();
+		}
+		
 		public T X
 		{
 			get
