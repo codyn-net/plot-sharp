@@ -36,7 +36,7 @@ namespace Plot
 			}
 		}
 		
-		public void EmitChanged()
+		public virtual void EmitChanged()
 		{
 			if (d_frozen)
 			{
