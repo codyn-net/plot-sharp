@@ -47,7 +47,7 @@ namespace Plot
 		
 		public static Range<double> Widen(this Range<double> r, double scale)
 		{
-			if (r.Span() == 0)
+			if (System.Math.Abs(r.Span()) < 1e-9)
 			{
 				return new Range<double>(r.Min - scale, r.Max + scale);
 			}
