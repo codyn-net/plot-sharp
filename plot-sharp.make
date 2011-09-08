@@ -70,6 +70,7 @@ FILES = \
 	Plot.Renderers/Box.cs \
 	Plot.Renderers/IColored.cs \
 	Plot.Renderers/ILabeled.cs \
+	Plot.Renderers/Interpolation.cs \
 	Plot.Renderers/Line.cs \
 	Plot.Renderers/Renderer.cs \
 	Plot.Renderers/TextBox.cs \
@@ -93,7 +94,8 @@ REFERENCES =  \
 	System.Core \
 	Mono.Cairo \
 	System.Xml \
-	$(GTK_SHARP_LIBS)
+	$(GTK_SHARP_LIBS) \
+	$(BIOROB_MATH_SHARP_LIBS)
 
 DLL_REFERENCES =
 
