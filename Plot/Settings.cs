@@ -145,7 +145,7 @@ namespace Plot
 			graph.SnapRulerToData = SnapRulerToData;
 			
 			graph.XAxis.Update(XAxis);
-			graph.YAxis.Update(XAxis);
+			graph.YAxis.Update(YAxis);
 
 			graph.XAxisMode = XAxisMode;
 			graph.YAxisMode = YAxisMode;
