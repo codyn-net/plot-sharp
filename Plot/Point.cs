@@ -37,6 +37,28 @@ namespace Plot
 			return d_x.CompareTo(other.d_x);
 		}
 		
+		public override bool Equals(object obj)
+		{
+			if (obj == null)
+			{
+				return false;
+			}
+			
+			Point<T> other = obj as Point<T>;
+			
+			if (other == null)
+			{
+				return false;
+			}
+			
+			return Eq(d_x, other.d_x) && Eq(d_y, other.d_y);
+		}
+		
+		public override int GetHashCode()
+		{
+			return base.GetHashCode();
+		}
+		
 		public T X
 		{
 			get
