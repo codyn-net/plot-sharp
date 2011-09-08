@@ -406,7 +406,8 @@ namespace Plot
 					return false;
 				}
 				
-				return Gtk.Drag.CheckThreshold(this, (int)d_selectStart.X, (int)d_selectStart.Y, (int)d_selectEnd.X, (int)d_selectEnd.Y);
+				return Math.Abs((int)d_selectStart.X - (int)d_selectEnd.X) > 1 &&
+				       Math.Abs((int)d_selectStart.Y -(int)d_selectEnd.Y) > 1;
 			}
 		}
 		
@@ -511,13 +512,14 @@ namespace Plot
 			
 			GrabFocus();
 			
-			if (mod != 0)
+			Plot.Point<double> pt = new Point<double>(evnt.X, evnt.Y);
+			
+			if (d_graph.LabelHitTest(pt))
 			{
 				return base.OnButtonPressEvent(evnt);
 			}
-			
-			Plot.Point<double> pt = new Point<double>(evnt.X, evnt.Y);
 
+			// Start moving the canvas
 			if (d_enableMove && evnt.Button == 2)
 			{
 				d_button = pt;
@@ -528,11 +530,13 @@ namespace Plot
 				return true;
 			}
 			
-			if (d_enableSelect && evnt.Button == 1)
+			// Start rectangle selection
+			if (d_enableSelect && evnt.Button == 1 && mod == 0)
 			{
 				d_selectStart = pt;
 			}
 			
+			// Popup
 			if (evnt.Button == 3)
 			{
 				DoPopup(evnt);
@@ -562,20 +566,21 @@ namespace Plot
 					d_graph.UpdateAxis(new Range<double>(pt1.X, pt2.X),
 					                   new Range<double>(pt2.Y, pt1.Y));
 				}
-				else if (evnt.Button == 1)
-				{
-					Renderers.Renderer renderer;
-
-					if (d_graph.LabelHitTest(new Point<double>(evnt.X, evnt.Y), out renderer))
-					{
-						renderer.HasRuler = !renderer.HasRuler;
-					}
-				}
-
+				
 				d_selectStart = null;
 				d_selectEnd = null;
 				
 				QueueDraw();
+			}
+			
+			if (evnt.Button == 1)
+			{
+				Renderers.Renderer renderer;
+
+				if (d_graph.LabelHitTest(new Point<double>(evnt.X, evnt.Y), out renderer))
+				{
+					renderer.HasRuler = !renderer.HasRuler;
+				}
 			}
 			
 			return false;
@@ -599,23 +604,32 @@ namespace Plot
 			ctx.Stroke();
 		}
 		
+		protected void DrawTo(Cairo.Context ctx)
+		{
+			ctx.Save();
+			d_graph.Draw(ctx);
+			ctx.Restore();
+		
+			DrawSelection(ctx);
+		}
+		
 		protected override bool OnExposeEvent(Gdk.EventExpose evnt)
 		{
 			base.OnExposeEvent(evnt);
+			
+			if (d_overrideDraw)
+			{
+				return true;
+			}
 			
 			using (Cairo.Context ctx = Gdk.CairoHelper.Create(evnt.Window))
 			{
 				Gdk.CairoHelper.Rectangle(ctx, evnt.Area);
 				ctx.Clip();
 				
-				ctx.Save();
-				d_graph.Draw(ctx);
-				ctx.Restore();
-			
-				if (d_selectStart != null && d_selectEnd != null)
-				{
-					DrawSelection(ctx);
-				}
+				DrawTo(ctx);
+
+				((IDisposable)ctx.Target).Dispose();
 			}
 			
 			return true;
@@ -633,7 +647,7 @@ namespace Plot
 			return true;
 		}
 		
-		private void UndoLastZoom()
+		public void UndoLastZoom()
 		{
 			if (d_zoomstack.Count == 0)
 			{
