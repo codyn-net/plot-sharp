@@ -30,6 +30,7 @@ namespace Plot
 		private Point<double> d_selectEnd;
 		private Gtk.ActionGroup d_popupActions;
 		private Stack<Ranges> d_zoomstack;
+		private bool d_overrideDraw;
 		
 		public delegate void PopulatePopupHandler(object source, Gtk.UIManager manager);
 		public event PopulatePopupHandler PopulatePopup = delegate {};
@@ -75,6 +76,20 @@ namespace Plot
 				new Gtk.ActionEntry("ActionExportPng", null, "Export to PNG", null, null, OnActionExportPng),
 				new Gtk.ActionEntry("ActionShow", null, "Show", null, null, null),
 			});
+			
+			AppPaintable = true;
+		}
+		
+		protected bool DrawOverride
+		{
+			get
+			{
+				return d_overrideDraw;
+			}
+			set
+			{
+				d_overrideDraw = value;
+			}
 		}
 		
 		public bool EnableMove
@@ -140,14 +155,34 @@ namespace Plot
 		{
 			QueueDraw();
 		}
+		
+		protected virtual Cairo.Surface CreateGraphSurface(int width, int height)
+		{
+			Cairo.Surface ret = null;
+
+			using (Cairo.Context ctx = Gdk.CairoHelper.Create(GdkWindow))
+			{
+				Cairo.Surface surface;
+				
+				if (Screen.RgbaColormap != null)
+				{
+					surface = ctx.Target.CreateSimilar(Cairo.Content.ColorAlpha, width, height);
+				}
+				else
+				{
+					surface = ctx.Target.CreateSimilar(ctx.Target.Content, width, height);
+				}
+
+				ret = surface;
+				((IDisposable)ctx.Target).Dispose();
+			}
+			
+			return ret;
+		}
 
 		private void GraphRequestSurface(object source, RequestSurfaceArgs args)
 		{
-			using (Cairo.Context ctx = Gdk.CairoHelper.Create(GdkWindow))
-			{
-				Cairo.Surface surface = ctx.Target.CreateSimilar(ctx.Target.Content, args.Width, args.Height);
-				args.Surface = surface;
-			}
+			args.Surface = CreateGraphSurface(args.Width, args.Height);
 		}
 		
 		public Graph Graph
@@ -337,13 +372,15 @@ namespace Plot
 			return base.OnMotionNotifyEvent(evnt);
 		}
 
-		protected override void OnSizeAllocated(Gdk.Rectangle allocation)
+		protected override bool OnConfigureEvent(Gdk.EventConfigure evnt)
 		{
-			base.OnSizeAllocated(allocation);
+			base.OnConfigureEvent (evnt);
 			
-			d_graph.Dimensions.Resize(allocation.Width, allocation.Height);
+			d_graph.Dimensions.Resize(Allocation.Width, Allocation.Height);
+			
+			return false;
 		}
-		
+
 		private Rectangle<double> NormalizedSelection
 		{
 			get
