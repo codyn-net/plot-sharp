@@ -301,6 +301,21 @@ namespace Plot.Renderers
 			}
 		}
 		
+		public IEnumerable<Point<double>> SortedData
+		{
+			get
+			{
+				if (d_sortedData != null)
+				{
+					return d_sortedData;
+				}
+				else
+				{
+					return d_data;
+				}
+			}
+		}
+		
 		public IEnumerable<Point<double>> Data
 		{
 			get
