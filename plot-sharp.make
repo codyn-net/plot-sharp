@@ -50,7 +50,6 @@ FILES = \
 	Plot/AssemblyInfo.cs \
 	Plot/AxisMode.cs \
 	Plot/Border.cs \
-	Plot/Changeable.cs \
 	Plot/Color.cs \
 	Plot/ColorFgBg.cs \
 	Plot/ColorMap.cs \
@@ -62,10 +61,7 @@ FILES = \
 	Plot.Export/Svg.cs \
 	Plot.Export/Gdk.cs \
 	Plot.Export/Surface.cs \
-	Plot/ExtensionMethods.cs \
 	Plot/Graph.cs \
-	Plot/Point.cs \
-	Plot/Range.cs \
 	Plot/Rectangle.cs \
 	Plot.Renderers/Box.cs \
 	Plot.Renderers/IColored.cs \
