@@ -15,6 +15,7 @@ namespace Plot
 		private bool d_showAxis;
 		private bool d_snapRulerToData;
 		private bool d_showRulerAxis;
+		private bool d_autoRecolor;
 		private Point d_autoMargin;
 
 		private List<Renderers.Renderer> d_renderers;
@@ -213,6 +214,20 @@ namespace Plot
 							AxisModeChanged(ref d_yaxisMode, d_yaxis, d_renderersYRange, d_autoMargin.Y);
 						}
 					}
+				}
+			}
+		}
+		
+		public bool AutoRecolor
+		{
+			get { return d_autoRecolor; }
+			set
+			{
+				if (d_autoRecolor != value)
+				{
+					d_autoRecolor = value;
+					
+					UpdateColors();
 				}
 			}
 		}
@@ -611,6 +626,11 @@ namespace Plot
 		
 		private void UpdateColors()
 		{
+			if (!d_autoRecolor)
+			{
+				return;
+			}
+
 			int idx = 0;
 
 			foreach (Renderers.Renderer renderer in d_renderers)
@@ -623,7 +643,7 @@ namespace Plot
 				}
 			}
 			
-			EmitRequestRedraw();
+			Redraw();
 		}
 
 		public void Add(Renderers.Renderer renderer)

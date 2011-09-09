@@ -25,6 +25,7 @@ namespace Plot
 		public bool Antialias { get; set; }
 		public bool SnapRulerToData { get; set; }
 		public bool ShowRulerAxis { get; set; }
+		public bool AutoRecolor { get; set; }
 		public double AxisAspect { get; set; }
 		public string AxisColor { get; set; }		
 		public string BackgroundColor { get; set; }
@@ -56,6 +57,7 @@ namespace Plot
 			KeepAspect = false;
 			ShowRuler = true;
 			ShowRulerAxis = true;
+			AutoRecolor = true;
 			
 			XAxisMode = AxisMode.Auto;
 			YAxisMode = AxisMode.Auto;
@@ -144,6 +146,7 @@ namespace Plot
 			graph.AxisAspect = AxisAspect;
 			graph.Antialias = Antialias;
 			graph.SnapRulerToData = SnapRulerToData;
+			graph.AutoRecolor = AutoRecolor;
 			
 			graph.XAxis.Update(XAxis);
 			graph.YAxis.Update(YAxis);
@@ -171,6 +174,7 @@ namespace Plot
 			ShowRuler = graph.ShowRuler;
 			ShowLabels = graph.ShowLabels;
 			ShowRulerAxis = graph.ShowRulerAxis;
+			AutoRecolor = graph.AutoRecolor;
 
 			ShowRangeLabels = graph.ShowRangeLabels;
 			ShowXTicks = graph.XTicks.Visible;
