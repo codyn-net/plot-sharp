@@ -6,78 +6,50 @@ using Biorob.Math.Functions;
 
 namespace Plot.Renderers
 {
-	public class Interpolation : Line
+	public class Bezier : Line
 	{
 		private Range d_periodic;
+		private Biorob.Math.Functions.Bezier d_bezier;
 		private PiecewisePolynomial d_polynomial;
-		private Bezier d_bezier;
 		
-		public Interpolation(IEnumerable<Point> data, Color color, string label) : base(data, color, label)
+		public Bezier(PiecewisePolynomial polynomial, Color color, string label) : base(color, label)
 		{
+			d_polynomial = polynomial;
+			
+			if (d_polynomial != null)
+			{
+				d_bezier = new Biorob.Math.Functions.Bezier(d_polynomial);
+			}
 		}
 
-		public Interpolation(IEnumerable<Point> data, Color color) : base(data, color)
+		public Bezier(PiecewisePolynomial poly, Color color) : this(poly, color, null)
 		{
 		}
 		
-		public Interpolation(IEnumerable<Point> data) : base(data)
+		public Bezier(PiecewisePolynomial poly) : this(poly, null)
 		{
 		}
 		
-		public Interpolation(Color color, string name) : base(color, name)
+		public Bezier(Color color, string name) : this(null, color, name)
 		{
 		}
 		
-		public Interpolation(string name) : base(name)
+		public Bezier(string name) : this(null, null, name)
 		{
 		}
 		
-		public Interpolation() : base()
+		public Bezier() : this(null, null, null)
 		{
 		}
 		
-		public PiecewisePolynomial PiecewisePolynomial
+		public new PiecewisePolynomial Data
 		{
 			get
 			{
 				return d_polynomial;
 			}
 		}
-		
-		public Bezier Bezier
-		{
-			get
-			{
-				return d_bezier;
-			}
-		}
 
-		private void RecalculateCoefficients()
-		{
-			d_polynomial = null;
-			d_bezier = null;
-			
-			List<Point> pts = new List<Point>(SortedData);
-					
-			if (d_periodic != null)
-			{
-				Biorob.Math.Interpolation.Periodic.Extend(pts, d_periodic.Min, d_periodic.Max);
-			}
-			
-			if (pts.Count < 2)
-			{
-				return;
-			}
-			
-			PChip pchip = new PChip();
-			
-			d_polynomial = pchip.InterpolateSorted(pts);
-			d_bezier = new Bezier(d_polynomial);
-			
-			XRange.Update(d_polynomial.XRange);
-			YRange.Update(d_polynomial.YRange);
-		}
-		
 		public Range Periodic
 		{
 			get
@@ -103,7 +75,7 @@ namespace Plot.Renderers
 					d_periodic.Changed += OnPeriodicChanged;
 				}
 				
-				RecalculateCoefficients();
+				EmitChanged();
 			}
 		}
 		
@@ -128,20 +100,15 @@ namespace Plot.Renderers
 			}
 		}
 
-		private void RenderInterpolated(Cairo.Context context, Point scale)
-		{
-			if (d_bezier == null)
-			{
-				return;
-			}
-			
+		private void RenderBezier(Cairo.Context context, Point scale)
+		{			
 			bool first = true;
 			bool wasoutside = true;
 
 			context.Save();
 			
 			/* We are going to render this stuff now */
-			foreach (Bezier.Piece piece in d_bezier)
+			foreach (Biorob.Math.Functions.Bezier.Piece piece in d_bezier)
 			{
 				bool isoutside = (d_periodic != null && (piece.Begin.X < d_periodic.Min || piece.End.X > d_periodic.Max));
 				
@@ -177,17 +144,11 @@ namespace Plot.Renderers
 
 			context.Restore();
 		}
-		
-		public override void EmitChanged()
-		{
-			RecalculateCoefficients();
-			base.EmitChanged();
-		}
 
 		public override void Render(Cairo.Context context, Point scale)
 		{
 			// First render our interpolated line
-			RenderInterpolated(context, scale);
+			RenderBezier(context, scale);
 			
 			// Then render the markers, if needed
 			RenderMarkers(context, scale, 0, Count);
@@ -195,7 +156,7 @@ namespace Plot.Renderers
 		
 		private void OnPeriodicChanged(object source, EventArgs args)
 		{
-			RecalculateCoefficients();
+			EmitChanged();
 		}
 		
 		public override Point ValueAtX(double x, out bool interpolated, out bool extrapolated)
@@ -203,7 +164,7 @@ namespace Plot.Renderers
 			interpolated = false;
 			extrapolated = false;
 			
-			if (d_polynomial == null)
+			if (d_bezier == null)
 			{
 				extrapolated = true;
 				return new Point(0, 0);

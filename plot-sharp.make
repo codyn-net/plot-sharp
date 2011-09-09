@@ -66,7 +66,7 @@ FILES = \
 	Plot.Renderers/Box.cs \
 	Plot.Renderers/IColored.cs \
 	Plot.Renderers/ILabeled.cs \
-	Plot.Renderers/Interpolation.cs \
+	Plot.Renderers/Bezier.cs \
 	Plot.Renderers/Line.cs \
 	Plot.Renderers/Renderer.cs \
 	Plot.Renderers/TextBox.cs \

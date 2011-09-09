@@ -19,7 +19,7 @@
     <DefineConstants>DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <ConsolePause>false</ConsolePause>
+    <Externalconsole>true</Externalconsole>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
@@ -55,7 +55,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\usr\lib\cli\Tao.OpenGl-3.0\Tao.OpenGl.dll</HintPath>
     </Reference>
-    <Reference Include="Biorob.Math, Version=1.0.4267.25290, Culture=neutral, PublicKeyToken=null">
+    <Reference Include="Biorob.Math, Version=1.0.4269.28877, Culture=neutral, PublicKeyToken=null">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\.packeteer\install-cpg\lib\libbiorob-math1-sharp\Biorob.Math.dll</HintPath>
     </Reference>
@@ -97,7 +97,7 @@
     <Compile Include="Plot.Export\Data.cs" />
     <Compile Include="Plot\Main.cs" />
     <Compile Include="Plot\WidgetGL.cs" />
-    <Compile Include="Plot.Renderers\Interpolation.cs" />
+    <Compile Include="Plot.Renderers\Bezier.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Plot\" />
