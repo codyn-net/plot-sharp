@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Biorob.Math;
 
 namespace Plot.Renderers
 {
@@ -17,11 +18,11 @@ namespace Plot.Renderers
 		private double d_equalLength;
 		private double d_pixelLength;
 		private LengthType d_lengthType;
-		private Plot.Point<double> d_scale;
+		private Point d_scale;
 		private bool d_drawArrowHead;
 		private double d_arrowHeadSize;
 
-		public Vector(IEnumerable<Point<double>> data, Color color, string label) : base(data, color, label)
+		public Vector(IEnumerable<Point> data, Color color, string label) : base(data, color, label)
 		{
 			d_dydx = new List<double>();
 			d_length = new List<double>();
@@ -59,7 +60,7 @@ namespace Plot.Renderers
 			 
 			 v.d_equalLength = d_equalLength;
 			 v.d_pixelLength = d_pixelLength;
-			 v.d_scale = new Point<double>(d_scale.X, d_scale.Y);
+			 v.d_scale = new Point(d_scale.X, d_scale.Y);
 			 v.d_drawArrowHead = d_drawArrowHead;
 			 v.d_arrowHeadSize = d_arrowHeadSize;
 			 v.d_lengthType = d_lengthType;
@@ -213,15 +214,15 @@ namespace Plot.Renderers
 			}
 		}
 		
-		public Vector(IEnumerable<Point<double>> data, Color color) : this(data, color, "")
+		public Vector(IEnumerable<Point> data, Color color) : this(data, color, "")
 		{
 		}
 		
-		public Vector(IEnumerable<Point<double>> data) : this(data, null, "")
+		public Vector(IEnumerable<Point> data) : this(data, null, "")
 		{
 		}
 
-		public Vector(Color color, string name) : this(new Point<double>[] {}, color, "")
+		public Vector(Color color, string name) : this(new Point[] {}, color, "")
 		{
 		}
 		
@@ -233,7 +234,7 @@ namespace Plot.Renderers
 		{
 		}
 		
-		private bool SameScale(Point<double> scale)
+		private bool SameScale(Point scale)
 		{
 			if (d_scale == null)
 			{
@@ -262,7 +263,7 @@ namespace Plot.Renderers
 			}
 		}
 		
-		public override void Render(Cairo.Context context, Point<double> scale)
+		public override void Render(Cairo.Context context, Point scale)
 		{
 			base.Render(context, scale);
 			
@@ -284,7 +285,7 @@ namespace Plot.Renderers
 			
 			for (int i = idx; i < endidx; ++i)
 			{
-				Point<double> item = PrivateData[i];
+				Point item = PrivateData[i];
 				
 				// In pixel space
 				double px = scale.X * item.X;

@@ -3,21 +3,21 @@ using System.Collections.Generic;
 
 namespace Plot
 {
-	public class Rectangle<T> where T : struct
+	public class Rectangle
 	{
-		private T d_x;
-		private T d_y;
-		private T d_width;
-		private T d_height;
+		private double d_x;
+		private double d_y;
+		private double d_width;
+		private double d_height;
 		
 		public event EventHandler Resized = delegate {};
 		public event EventHandler Moved = delegate {};
 		
-		public Rectangle(Rectangle<T> other) : this(other.X, other.Y, other.Width, other.Height)
+		public Rectangle(Rectangle other) : this(other.X, other.Y, other.Width, other.Height)
 		{
 		}
 
-		public Rectangle(T x, T y, T width, T height)
+		public Rectangle(double x, double y, double width, double height)
 		{
 			d_x = x;
 			d_y = y;
@@ -25,24 +25,24 @@ namespace Plot
 			d_height = height;
 		}
 		
-		public Rectangle() : this(default(T), default(T), default(T), default(T))
+		public Rectangle() : this(0, 0, 0, 0)
 		{
 		}
 		
-		public Rectangle<T> Copy()
+		public Rectangle Copy()
 		{
-			return new Rectangle<T>(this);
+			return new Rectangle(this);
 		}
 		
-		public void Update(T x, T y, T width, T height)
+		public void Update(double x, double y, double width, double height)
 		{
 			Move(x, y);
 			Resize(width, height);
 		}
 		
-		public void Resize(T width, T height)
+		public void Resize(double width, double height)
 		{
-			if (Eq(d_width, width) && Eq(d_height, height))
+			if (d_width == width && d_height == height)
 			{
 				return;
 			}
@@ -53,9 +53,9 @@ namespace Plot
 			Resized(this, new EventArgs());
 		}
 		
-		public void Move(T x, T y)
+		public void Move(double x, double y)
 		{
-			if (Eq(d_x, x) && Eq(d_y, y))
+			if (d_x == x && d_y == y)
 			{
 				return;
 			}
@@ -66,11 +66,6 @@ namespace Plot
 			Moved(this, new EventArgs());
 		}
 		
-		private bool Eq(T a, T b)
-		{
-			return EqualityComparer<T>.Default.Equals(a, b);
-		}
-		
 		public override bool Equals(object obj)
 		{
 			if (obj == null)
@@ -78,17 +73,17 @@ namespace Plot
 				return false;
 			}
 			
-			Rectangle<T> other = obj as Rectangle<T>;
+			Rectangle other = obj as Rectangle;
 			
 			if (other == null)
 			{
 				return false;
 			}
 			
-			return Eq(d_x, other.d_x) &&
-			       Eq(d_y, other.d_y) &&
-			       Eq(d_width, other.d_width) &&
-			       Eq(d_height, other.d_height);
+			return d_x == other.d_x &&
+			       d_y == other.d_y &&
+			       d_width == other.d_width &&
+			       d_height == other.d_height;
 		}
 		
 		public override int GetHashCode()
@@ -96,7 +91,7 @@ namespace Plot
 			return base.GetHashCode();
 		}
 		
-		public T X
+		public double X
 		{
 			get
 			{
@@ -104,7 +99,7 @@ namespace Plot
 			}
 			set
 			{
-				if (!Eq(d_x, value))
+				if (d_x != value)
 				{
 					d_x = value;
 					
@@ -113,7 +108,7 @@ namespace Plot
 			}
 		}
 		
-		public T Y
+		public double Y
 		{
 			get
 			{
@@ -122,7 +117,7 @@ namespace Plot
 			
 			set
 			{
-				if (!Eq(d_y, value))
+				if (d_y != value)
 				{
 					d_y = value;
 					
@@ -131,7 +126,7 @@ namespace Plot
 			}
 		}
 		
-		public T Width
+		public double Width
 		{
 			get
 			{
@@ -139,7 +134,7 @@ namespace Plot
 			}
 			set
 			{
-				if (!Eq(d_width, value))
+				if (d_width != value)
 				{
 					d_width = value;
 					
@@ -148,7 +143,7 @@ namespace Plot
 			}
 		}
 		
-		public T Height
+		public double Height
 		{
 			get
 			{
@@ -156,13 +151,24 @@ namespace Plot
 			}
 			set
 			{
-				if (!Eq(d_height, value))
+				if (d_height != value)
 				{
 					d_height = value;
 				
 					Resized(this, new EventArgs());
 				}
 			}
+		}
+		
+		public bool Contains(Biorob.Math.Point pt)
+		{
+			return Contains(pt.X, pt.Y);
+		}
+		
+		public bool Contains(double x, double y)
+		{
+			return x >= d_x && x <= d_x + d_width &&
+			       y >= d_y && y <= d_y + d_height;
 		}
 	}
 }

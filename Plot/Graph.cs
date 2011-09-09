@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Biorob.Math;
 
 namespace Plot
 {
@@ -14,39 +15,39 @@ namespace Plot
 		private bool d_showAxis;
 		private bool d_snapRulerToData;
 		private bool d_showRulerAxis;
-		private Point<double> d_autoMargin;
+		private Point d_autoMargin;
 
 		private List<Renderers.Renderer> d_renderers;
 		
 		// Axis
-		private Range<double> d_xaxis;
+		private Range d_xaxis;
 		private AxisMode d_xaxisMode;
 
-		private Range<double> d_yaxis;
+		private Range d_yaxis;
 		private AxisMode d_yaxisMode;
 		
-		private Range<double> d_renderersXRange;
-		private Range<double> d_renderersYRange;
+		private Range d_renderersXRange;
+		private Range d_renderersYRange;
 		
 		private double d_axisAspect;
 		private bool d_keepAxisAspect;
 
 		private Cairo.Surface[] d_backbuffer;
 		private int d_currentBuffer;
-		private Point<double> d_ruler;
+		private Point d_ruler;
 		private Ticks d_xticks;
 		private Ticks d_yticks;
 		private bool d_recreate;
 		private bool d_checkingAspect;
 		
-		private Point<double> d_previousAxisSpan;
-		private Point<double> d_previousAxisOrigin;
+		private Point d_previousAxisSpan;
+		private Point d_previousAxisOrigin;
 		
-		private Dictionary<Renderers.ILabeled, Rectangle<double>> d_labelRegions;
+		private Dictionary<Renderers.ILabeled, Rectangle> d_labelRegions;
 		
 		// User configurable
 
-		private Rectangle<int> d_dimensions;
+		private Rectangle d_dimensions;
 		
 		// Appearance
 		private Pango.FontDescription d_font;
@@ -71,15 +72,15 @@ namespace Plot
 		public event RequestSurfaceHandler RequestSurface = delegate {};
 		public event EventHandler RequestRedraw = delegate {};
 		
-		public Graph(Range<double> xaxis, Range<double> yaxis)
+		public Graph(Range xaxis, Range yaxis)
 		{
 			d_renderers = new List<Renderers.Renderer>();
 			
 			d_xaxis = xaxis;
 			d_yaxis = yaxis;
 			
-			d_renderersXRange = new Range<double>(0, 0);
-			d_renderersYRange = new Range<double>(0, 0);
+			d_renderersXRange = new Range(0, 0);
+			d_renderersYRange = new Range(0, 0);
 			
 			d_xticks = new Ticks();
 			d_xticks.Changed += OnXTicksChanged;
@@ -94,7 +95,7 @@ namespace Plot
 			d_axisLabelColors = new ColorFgBg();
 			d_rulerLabelColors = new ColorFgBg();
 			
-			d_autoMargin = new Point<double>(0, 0.1);
+			d_autoMargin = new Point(0, 0.1);
 			d_colorMap = ColorMap.Default.Copy();
 			
 			d_colorMap.Changed += delegate {
@@ -106,7 +107,7 @@ namespace Plot
 				RecalculateXAxis();
 			};
 			
-			d_labelRegions = new Dictionary<Renderers.ILabeled, Rectangle<double>>();
+			d_labelRegions = new Dictionary<Renderers.ILabeled, Rectangle>();
 			
 			d_xaxis.Changed += delegate {
 				Console.WriteLine(d_xaxis);
@@ -127,7 +128,7 @@ namespace Plot
 				d_yaxisMode = AxisMode.Fixed;
 			};
 
-			d_dimensions = new Rectangle<int>();
+			d_dimensions = new Rectangle();
 			
 			d_dimensions.Resized += delegate {
 				d_recreate = true;
@@ -167,7 +168,7 @@ namespace Plot
 			d_gridColor.Changed += RedrawWhenChanged;
 		}
 		
-		public Graph() : this(new Range<double>(0, 1), new Range<double>(-1, 1))
+		public Graph() : this(new Range(0, 1), new Range(-1, 1))
 		{
 		}
 		
@@ -280,7 +281,7 @@ namespace Plot
 			}
 		}
 		
-		public Point<double> AutoMargin
+		public Point AutoMargin
 		{
 			get
 			{
@@ -385,7 +386,7 @@ namespace Plot
 			}
 		}
 		
-		public Rectangle<int> Dimensions
+		public Rectangle Dimensions
 		{
 			get
 			{
@@ -455,7 +456,7 @@ namespace Plot
 			EmitRequestRedraw();
 		}
 		
-		public Point<double> Ruler
+		public Point Ruler
 		{
 			get
 			{
@@ -498,7 +499,7 @@ namespace Plot
 			}
 		}
 		
-		public Range<double> DataXRange
+		public Range DataXRange
 		{
 			get
 			{
@@ -506,7 +507,7 @@ namespace Plot
 			}
 		}
 		
-		public Range<double> DataYRange
+		public Range DataYRange
 		{
 			get
 			{
@@ -514,7 +515,7 @@ namespace Plot
 			}
 		}
 		
-		public Range<double> YAxis
+		public Range YAxis
 		{
 			get
 			{
@@ -539,7 +540,7 @@ namespace Plot
 			}
 		}
 		
-		public Range<double> XAxis
+		public Range XAxis
 		{
 			get
 			{
@@ -582,13 +583,13 @@ namespace Plot
 		
 		private void OnXTicksChanged(object source, EventArgs args)
 		{
-			((Ticks)source).Update(d_xaxis, d_dimensions.Width);
+			((Ticks)source).Update(d_xaxis, (int)d_dimensions.Width);
 			Redraw();
 		}
 		
 		private void OnYTicksChanged(object source, EventArgs args)
 		{
-			((Ticks)source).Update(d_yaxis, d_dimensions.Height);
+			((Ticks)source).Update(d_yaxis, (int)d_dimensions.Height);
 			Redraw();
 		}
 		
@@ -655,12 +656,12 @@ namespace Plot
 		
 		private void UpdateXTicks()
 		{
-			d_xticks.Update(d_xaxis, d_dimensions.Width);
+			d_xticks.Update(d_xaxis, (int)d_dimensions.Width);
 		}
 		
 		private void UpdateYTicks()
 		{
-			d_yticks.Update(d_yaxis, d_dimensions.Height);
+			d_yticks.Update(d_yaxis, (int)d_dimensions.Height);
 		}
 		
 		private void CheckAspect()
@@ -673,25 +674,25 @@ namespace Plot
 			d_checkingAspect = true;
 			
 			// Update the viewport (xaxis, yaxis) according to the aspect ratio
-			double aspect = (d_yaxis.Span() / d_dimensions.Height) / (d_xaxis.Span() / d_dimensions.Width);
+			double aspect = (d_yaxis.Span / d_dimensions.Height) / (d_xaxis.Span / d_dimensions.Width);
 			
 			if (aspect < d_axisAspect)
 			{
 				// Yaxis should increase
-				d_yaxis.Expand(-d_yaxis.Span() + (d_xaxis.Span() / d_dimensions.Width) * d_dimensions.Height * d_axisAspect);
+				d_yaxis.Expand(-d_yaxis.Span + (d_xaxis.Span / d_dimensions.Width) * d_dimensions.Height * d_axisAspect);
 			}
 			else if (aspect > d_axisAspect)
 			{
 				// XAxis should increase
-				d_xaxis.Expand(-d_xaxis.Span() + (d_yaxis.Span() / d_dimensions.Height) * d_dimensions.Width / d_axisAspect);
+				d_xaxis.Expand(-d_xaxis.Span + (d_yaxis.Span / d_dimensions.Height) * d_dimensions.Width / d_axisAspect);
 			}
 			
 			d_checkingAspect = false;
 		}
 		
-		private delegate Range<double> SelectRange(Renderers.Renderer renderer);
+		private delegate Range SelectRange(Renderers.Renderer renderer);
 		
-		private void UpdateDataRange(Range<double> range, SelectRange selector)
+		private void UpdateDataRange(Range range, SelectRange selector)
 		{
 			range.Freeze();
 			
@@ -700,7 +701,7 @@ namespace Plot
 			
 			foreach (Renderers.Renderer renderer in d_renderers)
 			{
-				Range<double> r = selector(renderer);
+				Range r = selector(renderer);
 
 				if (first)
 				{
@@ -724,7 +725,7 @@ namespace Plot
 			range.Thaw();
 		}
 		
-		private void RecalculateAxis(ref AxisMode mode, Range<double> axis, double margin, SelectRange selector)
+		private void RecalculateAxis(ref AxisMode mode, Range axis, double margin, SelectRange selector)
 		{
 			if (mode == AxisMode.Fixed)
 			{
@@ -736,7 +737,7 @@ namespace Plot
 			
 			foreach (Renderers.Renderer renderer in d_renderers)
 			{
-				Range<double> r = selector(renderer);
+				Range r = selector(renderer);
 				
 				if (r == null)
 				{
@@ -785,7 +786,7 @@ namespace Plot
 			UpdateDataRange(d_renderersXRange, a => a.XRange);
 		}
 		
-		private void AxisModeChanged(ref AxisMode mode, Range<double> range, Range<double> dataRange, double margin)
+		private void AxisModeChanged(ref AxisMode mode, Range range, Range dataRange, double margin)
 		{
 			if (mode == AxisMode.Auto)
 			{
@@ -857,12 +858,12 @@ namespace Plot
 			Redraw();
 		}
 		
-		private Point<double> Scale
+		private Point Scale
 		{
 			get
 			{
-				return new Point<double>(d_dimensions.Width / d_xaxis.Span(),
-				                         d_dimensions.Height / d_yaxis.Span());
+				return new Point(d_dimensions.Width / d_xaxis.Span,
+				                 d_dimensions.Height / d_yaxis.Span);
 			}
 		}
 
@@ -890,12 +891,12 @@ namespace Plot
 						
 			foreach (Series.Line series in d_renderers)
 			{
-				Point<double> last = series[-1];
+				Point last = series[-1];
 				int missing = m - series.Unprocessed;
 				
 				for (int i = maxunp.Count - missing; i < maxunp.Count; ++i)
 				{
-					series.Append(new Point<double>(maxunp[i].X, last.Y));
+					series.Append(new Point(maxunp[i].X, last.Y));
 				}
 			}
 			
@@ -907,20 +908,20 @@ namespace Plot
 			}*/
 		}
 		
-		private Point<double> AxisTransform
+		private Point AxisTransform
 		{
 			get
 			{
-				Point<double> scale = Scale;
+				Point scale = Scale;
 				
-				return new Point<double>(-d_xaxis.Min * scale.X,
+				return new Point(-d_xaxis.Min * scale.X,
 				                         -d_yaxis.Max * scale.Y);
 			}
 		}
 		
 		private void Prepare(Cairo.Context ctx)
 		{
-			Point<double> tr = AxisTransform;
+			Point tr = AxisTransform;
 			
 			ctx.Scale(1, -1);
 			ctx.Translate(tr.X, tr.Y);
@@ -1062,18 +1063,18 @@ namespace Plot
 		
 		private delegate void TicksRenderer(double coord, double v);
 		
-		public Point<double> AxisToPixel(Point<double> p)
+		public Point AxisToPixel(Point p)
 		{
-			Point<double> scale = Scale;
-			Point<double> tr = AxisTransform;
+			Point scale = Scale;
+			Point tr = AxisTransform;
 			
-			return new Point<double>(tr.X + p.X * scale.X, tr.Y + p.Y * scale.Y);
+			return new Point(tr.X + p.X * scale.X, tr.Y + p.Y * scale.Y);
 		}
 		
 		private void DrawTicks(Cairo.Context ctx, Ticks ticks, int i, TicksRenderer renderer)
 		{
-			Point<double> scale = Scale;
-			Point<double> tr = AxisTransform;
+			Point scale = Scale;
+			Point tr = AxisTransform;
 			
 			foreach (double p in ticks)
 			{
@@ -1088,9 +1089,9 @@ namespace Plot
 			if (d_showRangeLabels)
 			{
 				double axisy = 0.5;
-				Point<double> tr = AxisTransform;
+				Point tr = AxisTransform;
 
-				if (d_yaxis.Span() > 0)
+				if (d_yaxis.Span > 0)
 				{
 					axisy = -RoundInBase(tr.Y, 0.5);
 				}
@@ -1182,9 +1183,9 @@ namespace Plot
 			{
 				double axisx = 0.5;
 				
-				if (d_xaxis.Span() > 0)
+				if (d_xaxis.Span > 0)
 				{
-					axisx = RoundInBase(d_dimensions.Width / d_xaxis.Span() * -d_xaxis.Min, 0.5);
+					axisx = RoundInBase(d_dimensions.Width / d_xaxis.Span * -d_xaxis.Min, 0.5);
 				}
 
 				DrawAxisNumber(ctx,
@@ -1280,9 +1281,9 @@ namespace Plot
 			
 			double axisx = 0.5;
 			
-			if (d_xaxis.Span() > 0)
+			if (d_xaxis.Span > 0)
 			{
-				axisx = RoundInBase(d_dimensions.Width / d_xaxis.Span() * -d_xaxis.Min, 0.5);
+				axisx = RoundInBase(d_dimensions.Width / d_xaxis.Span * -d_xaxis.Min, 0.5);
 			}
 				
 			DrawYTicks(ctx, d_yticks, axisx, axisx - d_yticks.Length / 2);
@@ -1308,9 +1309,9 @@ namespace Plot
 			
 			double axisy = 0.5;
 			
-			Point<double> tr = AxisTransform;
+			Point tr = AxisTransform;
 
-			if (d_yaxis.Span() > 0)
+			if (d_yaxis.Span > 0)
 			{
 				axisy = -RoundInBase(tr.Y, 0.5);
 			}
@@ -1331,9 +1332,9 @@ namespace Plot
 		{
 			axisy = 0.5;
 		
-			Point<double> tr = AxisTransform;
+			Point tr = AxisTransform;
 			
-			if (d_yaxis.Span() > 0)
+			if (d_yaxis.Span > 0)
 			{
 				axisy = -RoundInBase(tr.Y, 0.5);
 			}
@@ -1354,9 +1355,9 @@ namespace Plot
 		{
 			axisx = 0.5;
 			
-			if (d_xaxis.Span() > 0)
+			if (d_xaxis.Span > 0)
 			{
-				axisx = RoundInBase(d_dimensions.Width / d_xaxis.Span() * -d_xaxis.Min, 0.5);
+				axisx = RoundInBase(d_dimensions.Width / d_xaxis.Span * -d_xaxis.Min, 0.5);
 			}
 			
 			axisxlbl = axisx - d_xticks.Length / 2;
@@ -1420,7 +1421,7 @@ namespace Plot
 				return null;
 			}
 
-			RequestSurfaceArgs args = new RequestSurfaceArgs(d_dimensions.Width, d_dimensions.Height);
+			RequestSurfaceArgs args = new RequestSurfaceArgs((int)d_dimensions.Width, (int)d_dimensions.Height);
 			
 			RequestSurface(this, args);
 			
@@ -1491,13 +1492,13 @@ namespace Plot
 			}
 			
 			// Also only can do this when moving, not scaling
-			if (Math.Abs(d_previousAxisSpan.X - d_xaxis.Span()) > 1e-6 ||
-			    Math.Abs(d_previousAxisSpan.Y - d_yaxis.Span()) > 1e-6)
+			if (Math.Abs(d_previousAxisSpan.X - d_xaxis.Span) > 1e-6 ||
+			    Math.Abs(d_previousAxisSpan.Y - d_yaxis.Span) > 1e-6)
 			{
 				return;
 			}
 			
-			Point<double> s = Scale;
+			Point s = Scale;
 			
 			// Determine the shift in pixels
 			double shiftX = (d_previousAxisOrigin.X - d_xaxis.Min) * s.X;
@@ -1611,8 +1612,8 @@ namespace Plot
 				}
 			}
 			
-			d_previousAxisSpan = new Point<double>(d_xaxis.Span(), d_yaxis.Span());
-			d_previousAxisOrigin = new Point<double>(d_xaxis.Min, d_yaxis.Min);
+			d_previousAxisSpan = new Point(d_xaxis.Span, d_yaxis.Span);
+			d_previousAxisOrigin = new Point(d_xaxis.Min, d_yaxis.Min);
 		}
 		
 		private void DrawRuler(Cairo.Context ctx)
@@ -1625,13 +1626,13 @@ namespace Plot
 			d_rulerColor.Set(ctx);
 			ctx.LineWidth = 1;
 			
-			Point<double> tr = AxisTransform;
-			Point<double> pos = PixelToAxis(d_ruler);
+			Point tr = AxisTransform;
+			Point pos = PixelToAxis(d_ruler);
 			
 			bool freestyle = true;
 			bool first = true;
 			
-			Point<double> scale = Scale;
+			Point scale = Scale;
 			double x = RoundInBase(d_ruler.X, 0.5);
 			
 			if (!d_snapRulerToData && d_showRulerAxis)
@@ -1652,7 +1653,7 @@ namespace Plot
 				bool interpolated;
 				bool extrapolated;
 
-				Point<double> val;
+				Point val;
 				
 				if (d_snapRulerToData)
 				{
@@ -1826,7 +1827,7 @@ namespace Plot
 					layout.FontDescription = d_font;
 				}
 				
-				Rectangle<double> lastRegion = null;
+				Rectangle lastRegion = null;
 
 				foreach (Renderers.Renderer renderer in d_renderers)
 				{
@@ -1868,7 +1869,7 @@ namespace Plot
 					int width, height;
 					layout.GetPixelSize(out width, out height);
 					
-					Rectangle<double> region = new Rectangle<double>();
+					Rectangle region = new Rectangle();
 
 					if (lastRegion != null)
 					{
@@ -1946,7 +1947,7 @@ namespace Plot
 			if (HasOverlayBuffer)
 			{
 				ctx.Save();
-				ctx.SetSourceSurface(d_overlayBuffer, d_dimensions.X, d_dimensions.Y);
+				ctx.SetSourceSurface(d_overlayBuffer, (int)d_dimensions.X, (int)d_dimensions.Y);
 				ctx.Paint();
 				ctx.Restore();
 			}
@@ -1972,11 +1973,11 @@ namespace Plot
 			ctx.Restore();
 		}
 		
-		public void DrawTo(Cairo.Context ctx, Rectangle<int> dimensions)
+		public void DrawTo(Cairo.Context ctx, Rectangle dimensions)
 		{
 			ctx.Save();
 			
-			Rectangle<int> dims = d_dimensions;
+			Rectangle dims = d_dimensions;
 			d_dimensions = dimensions;
 			
 			ctx.Rectangle(dims.X, dims.Y, dims.Width, dims.Height);
@@ -2036,7 +2037,7 @@ namespace Plot
 			d_dimensions = dims;
 		}
 		
-		public Rectangle<double> RendererRegion(Renderers.Renderer renderer)
+		public Rectangle RendererRegion(Renderers.Renderer renderer)
 		{
 			Renderers.ILabeled lbl = renderer as Renderers.ILabeled;
 			
@@ -2081,7 +2082,7 @@ namespace Plot
 			DrawOverlay(ctx);
 		}
 		
-		public void LookAt(Rectangle<double> rectangle)
+		public void LookAt(Rectangle rectangle)
 		{
 			d_xaxis.Freeze();
 			d_yaxis.Freeze();
@@ -2093,7 +2094,7 @@ namespace Plot
 			d_yaxis.Thaw();
 		}
 		
-		public void ZoomAt(Point<double> pt, double factorX, double factorY)
+		public void ZoomAt(Point pt, double factorX, double factorY)
 		{
 			d_xaxis.Freeze();
 			d_yaxis.Freeze();
@@ -2114,7 +2115,7 @@ namespace Plot
 			d_yaxis.Thaw();
 		}
 		
-		public void MoveBy(Point<double> pt)
+		public void MoveBy(Point pt)
 		{
 			d_xaxis.Freeze();
 			d_yaxis.Freeze();
@@ -2126,19 +2127,19 @@ namespace Plot
 			d_yaxis.Thaw();
 		}
 		
-		public Point<double> PixelToAxis(Point<double> pt)
+		public Point PixelToAxis(Point pt)
 		{
-			return new Point<double>(d_xaxis.Min + pt.X * ((d_xaxis.Max - d_xaxis.Min) / d_dimensions.Width),
+			return new Point(d_xaxis.Min + pt.X * ((d_xaxis.Max - d_xaxis.Min) / d_dimensions.Width),
 			                         d_yaxis.Min + (d_dimensions.Height - pt.Y) * ((d_yaxis.Max - d_yaxis.Min) / d_dimensions.Height));
 		}
 		
-		public Point<double> ScaleFromPixel(Point<double> pt)
+		public Point ScaleFromPixel(Point pt)
 		{
-			return new Point<double>(pt.X * ((d_xaxis.Max - d_xaxis.Min) / d_dimensions.Width),
+			return new Point(pt.X * ((d_xaxis.Max - d_xaxis.Min) / d_dimensions.Width),
 			                         pt.Y * ((d_yaxis.Max - d_yaxis.Min) / d_dimensions.Height));
 		}
 		
-		public void UpdateAxis(Range<double> xaxis, Range<double> yaxis)
+		public void UpdateAxis(Range xaxis, Range yaxis)
 		{
 			d_xaxis.Freeze();
 			d_yaxis.Freeze();
@@ -2150,18 +2151,18 @@ namespace Plot
 			d_yaxis.Thaw();
 		}
 		
-		public bool LabelHitTest(Point<double> pos)
+		public bool LabelHitTest(Point pos)
 		{
 			Renderers.Renderer renderer;
 			
 			return LabelHitTest(pos, out renderer);
 		}
 		
-		public bool LabelHitTest(Point<double> pos, out Renderers.Renderer renderer)
+		public bool LabelHitTest(Point pos, out Renderers.Renderer renderer)
 		{
 			renderer = null;
 			
-			foreach (KeyValuePair<Renderers.ILabeled, Rectangle<double>> pair in d_labelRegions)
+			foreach (KeyValuePair<Renderers.ILabeled, Rectangle> pair in d_labelRegions)
 			{
 				if (pair.Value.Contains(pos))
 				{

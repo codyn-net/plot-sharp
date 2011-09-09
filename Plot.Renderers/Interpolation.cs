@@ -1,24 +1,26 @@
 using System;
 using Biorob.Math.Interpolation;
 using System.Collections.Generic;
+using Biorob.Math;
+using Biorob.Math.Functions;
 
 namespace Plot.Renderers
 {
 	public class Interpolation : Line
 	{
-		private Range<double> d_periodic;
-		private List<PChip.Piece> d_pieces;
-		private List<Point<double>[]> d_curves;
+		private Range d_periodic;
+		private PiecewisePolynomial d_polynomial;
+		private Bezier d_bezier;
 		
-		public Interpolation(IEnumerable<Point<double>> data, Color color, string label) : base(data, color, label)
+		public Interpolation(IEnumerable<Point> data, Color color, string label) : base(data, color, label)
 		{
 		}
 
-		public Interpolation(IEnumerable<Point<double>> data, Color color) : base(data, color)
+		public Interpolation(IEnumerable<Point> data, Color color) : base(data, color)
 		{
 		}
 		
-		public Interpolation(IEnumerable<Point<double>> data) : base(data)
+		public Interpolation(IEnumerable<Point> data) : base(data)
 		{
 		}
 		
@@ -34,54 +36,28 @@ namespace Plot.Renderers
 		{
 		}
 		
-		public IEnumerable<PChip.Piece> Pieces
+		public PiecewisePolynomial PiecewisePolynomial
 		{
 			get
 			{
-				return d_pieces;
+				return d_polynomial;
 			}
 		}
 		
-		public IEnumerable<Point<double>[]> Curves
+		public Bezier Bezier
 		{
 			get
 			{
-				return d_curves;
+				return d_bezier;
 			}
-		}
-
-		private Point<double>[] PieceToCurve(PChip.Piece piece)
-		{
-			Point<double>[] ret = new Point<double>[4];
-			
-			double dx = piece.P1.X - piece.P0.X;
-					
-			// Convert from polynomial form to bezier curve form			
-			ret[0] = new Point<double>(piece.P0.X,
-			                           piece.P0.Y);
-			
-			ret[1] = new Point<double>(piece.P0.X + dx / 3,
-			                           piece.P0.Y + piece.M0 / 3);
-			
-			ret[2] = new Point<double>(piece.P1.X - dx / 3,
-			                           piece.P1.Y - piece.M1 / 3);
-			
-			ret[3] = new Point<double>(piece.P1.X, piece.P1.Y);
-			
-			return ret;
 		}
 
 		private void RecalculateCoefficients()
 		{
-			d_pieces = null;
-			d_curves = null;
+			d_polynomial = null;
+			d_bezier = null;
 			
-			List<Biorob.Math.Interpolation.Point> pts = new List<Biorob.Math.Interpolation.Point>(Count);
-			
-			foreach (Point<double> pt in SortedData)
-			{
-				pts.Add(new Biorob.Math.Interpolation.Point(pt.X, pt.Y));
-			}
+			List<Point> pts = new List<Point>(SortedData);
 					
 			if (d_periodic != null)
 			{
@@ -93,19 +69,16 @@ namespace Plot.Renderers
 				return;
 			}
 			
-			d_pieces = PChip.InterpolateSorted(pts);
+			PChip pchip = new PChip();
 			
-			d_curves = new List<Point<double>[]>();
+			d_polynomial = pchip.InterpolateSorted(pts);
+			d_bezier = new Bezier(d_polynomial);
 			
-			foreach (PChip.Piece piece in d_pieces)
-			{
-				d_curves.Add(PieceToCurve(piece));
-			}
-			
-			XRange.Update(d_pieces[0].Start, d_pieces[d_pieces.Count - 1].End);			
+			XRange.Update(d_polynomial.XRange);
+			YRange.Update(d_polynomial.YRange);
 		}
 		
-		public Range<double> Periodic
+		public Range Periodic
 		{
 			get
 			{
@@ -155,9 +128,9 @@ namespace Plot.Renderers
 			}
 		}
 
-		private void RenderInterpolated(Cairo.Context context, Point<double> scale)
+		private void RenderInterpolated(Cairo.Context context, Point scale)
 		{
-			if (d_curves == null)
+			if (d_bezier == null)
 			{
 				return;
 			}
@@ -168,9 +141,9 @@ namespace Plot.Renderers
 			context.Save();
 			
 			/* We are going to render this stuff now */
-			foreach (Point<double>[] points in d_curves)
+			foreach (Bezier.Piece piece in d_bezier)
 			{
-				bool isoutside = (d_periodic != null && (points[0].X < d_periodic.Min || points[3].X > d_periodic.Max));
+				bool isoutside = (d_periodic != null && (piece.Begin.X < d_periodic.Min || piece.End.X > d_periodic.Max));
 				
 				if (wasoutside != isoutside)
 				{
@@ -185,13 +158,13 @@ namespace Plot.Renderers
 				
 				if (first)
 				{
-					context.MoveTo(points[0].X * scale.X, points[0].Y * scale.Y);
+					context.MoveTo(piece.Begin.X * scale.X, piece.Begin.Y * scale.Y);
 					first = false;
 				}
 
-				context.CurveTo(points[1].X * scale.X, points[1].Y * scale.Y,
-				                points[2].X * scale.X, points[2].Y * scale.Y,
-				                points[3].X * scale.X, points[3].Y * scale.Y);
+				context.CurveTo(piece.C1.X * scale.X, piece.C1.Y * scale.Y,
+				                piece.C2.X * scale.X, piece.C2.Y * scale.Y,
+				                piece.End.X * scale.X, piece.End.Y * scale.Y);
 			
 				wasoutside = isoutside;
 			}
@@ -211,7 +184,7 @@ namespace Plot.Renderers
 			base.EmitChanged();
 		}
 
-		public override void Render(Cairo.Context context, Point<double> scale)
+		public override void Render(Cairo.Context context, Point scale)
 		{
 			// First render our interpolated line
 			RenderInterpolated(context, scale);
@@ -225,29 +198,28 @@ namespace Plot.Renderers
 			RecalculateCoefficients();
 		}
 		
-		public override Point<double> ValueAtX(double x, out bool interpolated, out bool extrapolated)
+		public override Point ValueAtX(double x, out bool interpolated, out bool extrapolated)
 		{
 			interpolated = false;
 			extrapolated = false;
 			
-			if (d_curves == null)
+			if (d_polynomial == null)
 			{
 				extrapolated = true;
-				return new Point<double>(0, 0);
+				return new Point(0, 0);
 			}
 			
-			double xmin = d_curves[0][0].X;
-			double xmax = d_curves[d_curves.Count - 1][3].X;
+			Range xrange = d_polynomial.XRange;
 			
-			if (x < xmin)
+			if (x < xrange.Min)
 			{
 				extrapolated = true;
-				return new Point<double>(xmin, d_curves[0][0].Y);
+				return new Point(xrange.Min, d_polynomial[0].Begin);
 			}
-			else if (x > xmax)
+			else if (x > xrange.Max)
 			{
 				extrapolated = true;
-				return new Point<double>(xmax, d_curves[d_curves.Count - 1][3].Y);
+				return new Point(xrange.Max, d_polynomial[d_polynomial.Count - 1].End);
 			}
 
 			if (d_periodic != null && (x < d_periodic.Min || x > d_periodic.Max))
@@ -256,20 +228,14 @@ namespace Plot.Renderers
 			}
 			
 			// Do the interpolation
-			foreach (Piece piece in d_pieces)
-			{
-				if (x >= piece.Start && x <= piece.End)
-				{
-					if (x != piece.Start || x != piece.End)
-					{
-						interpolated = true;
-					}
-
-					return new Point<double>(x, piece.Evaluate(x));
-				}
-			}
+			PiecewisePolynomial.Piece piece = d_polynomial.PieceAt(x);
 			
-			return null;
+			if (x != piece.Begin || x != piece.End)
+			{
+				interpolated = true;
+			}
+
+			return new Point(x, piece.Evaluate(x));
 		}
 	}
 }

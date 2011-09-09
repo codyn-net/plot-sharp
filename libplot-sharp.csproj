@@ -64,15 +64,11 @@
   <ItemGroup>
     <Compile Include="Plot\AssemblyInfo.cs" />
     <Compile Include="Plot\Color.cs" />
-    <Compile Include="Plot\ExtensionMethods.cs" />
     <Compile Include="Plot\Graph.cs" />
-    <Compile Include="Plot\Point.cs" />
-    <Compile Include="Plot\Range.cs" />
     <Compile Include="Plot\Rectangle.cs" />
     <Compile Include="Plot\RequestSurfaceHandler.cs" />
     <Compile Include="Plot\Ticks.cs" />
     <Compile Include="Plot\Directories.cs" />
-    <Compile Include="Plot\Changeable.cs" />
     <Compile Include="Plot\AxisMode.cs" />
     <Compile Include="Plot\Alignment.cs" />
     <Compile Include="Plot\SortedList.cs" />

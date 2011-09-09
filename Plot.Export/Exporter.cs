@@ -74,7 +74,7 @@ namespace Plot.Export
 		}
 		
 		public delegate void DoHandler();
-		public delegate void OverlayHandler(Cairo.Context context, Graph graph, Rectangle<int> dimensions);
+		public delegate void OverlayHandler(Cairo.Context context, Graph graph, Rectangle dimensions);
 		
 		public virtual void Begin()
 		{
@@ -97,12 +97,12 @@ namespace Plot.Export
 			End();
 		}
 		
-		public void Export(Graph graph, Rectangle<int> dimensions)
+		public void Export(Graph graph, Rectangle dimensions)
 		{
 			this.Export(graph, dimensions, null);
 		}
 		
-		public virtual void Export(Graph graph, Rectangle<int> dimensions, OverlayHandler overlay)
+		public virtual void Export(Graph graph, Rectangle dimensions, OverlayHandler overlay)
 		{
 			using (Cairo.Context ctx = CreateContext())
 			{

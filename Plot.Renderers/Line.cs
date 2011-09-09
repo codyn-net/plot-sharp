@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Biorob.Math;
 
 namespace Plot.Renderers
 {
@@ -25,8 +26,8 @@ namespace Plot.Renderers
 			Dotted
 		}
 
-		private List<Point<double>> d_data;
-		private SortedList<Point<double>> d_sortedData;
+		private List<Point> d_data;
+		private SortedList<Point> d_sortedData;
 
 		private Color d_color;
 		private string d_label;
@@ -36,25 +37,25 @@ namespace Plot.Renderers
 		
 		private double d_markerSize;
 		private MarkerType d_markerStyle;
-		private static Point<double> s_triangleDxDy;
-		private static IComparer<Point<double>> s_pointComparer;
+		private static Point s_triangleDxDy;
+		private static IComparer<Point> s_pointComparer;
 		
 		private LineType d_lineType;
 		
-		private delegate void MarkerRenderFunc(Cairo.Context context, Point<double> scale, Point<double> item, int idx);
+		private delegate void MarkerRenderFunc(Cairo.Context context, Point scale, Point item, int idx);
 		private MarkerRenderFunc d_markerRenderer;
 		
 		static Line()
 		{
-			s_triangleDxDy = new Point<double>(Math.Sin(1 / 3.0 * Math.PI),
+			s_triangleDxDy = new Point(Math.Sin(1 / 3.0 * Math.PI),
 			                                   Math.Cos(1 / 3.0 * Math.PI));	
 			
 			s_pointComparer = new PointComparer();
 		}
 		
-		public Line(IEnumerable<Point<double>> data, Color color, string label)
+		public Line(IEnumerable<Point> data, Color color, string label)
 		{
-			d_data = new List<Point<double>>(data);
+			d_data = new List<Point>(data);
 			d_label = label;
 			d_lineWidth = 1;
 			
@@ -77,15 +78,15 @@ namespace Plot.Renderers
 			EmitChanged();
 		}
 		
-		public Line(IEnumerable<Point<double>> data, Color color) : this(data, color, "")
+		public Line(IEnumerable<Point> data, Color color) : this(data, color, "")
 		{
 		}
 		
-		public Line(IEnumerable<Point<double>> data) : this(data, null, "")
+		public Line(IEnumerable<Point> data) : this(data, null, "")
 		{
 		}
 		
-		public Line(Color color, string name) : this(new Point<double>[] {}, color, name)
+		public Line(Color color, string name) : this(new Point[] {}, color, name)
 		{
 		}
 		
@@ -190,11 +191,11 @@ namespace Plot.Renderers
 				other.d_color = new Color(d_color.R, d_color.G, d_color.B, d_color.A);
 			}
 			
-			List<Point<double>> data = new List<Point<double>>();
+			List<Point> data = new List<Point>();
 			
-			foreach (Point<double> pt in d_data)
+			foreach (Point pt in d_data)
 			{
-				data.Add(new Point<double>(pt.X, pt.Y));
+				data.Add(new Point(pt.X, pt.Y));
 			}
 			
 			other.Data = data;
@@ -244,7 +245,7 @@ namespace Plot.Renderers
 			
 			for (int i = 0; i < d_data.Count; ++i)
 			{
-				Point<double> p = d_data[i];
+				Point p = d_data[i];
 
 				if (i == 0 || p.X < XRange.Min)
 				{
@@ -275,7 +276,7 @@ namespace Plot.Renderers
 				{
 					makesorted = true;
 					
-					d_sortedData = new SortedList<Point<double>>(new PointComparer());
+					d_sortedData = new SortedList<Point>(new PointComparer());
 					
 					for (int j = 0; j <= i; ++j)
 					{
@@ -301,7 +302,7 @@ namespace Plot.Renderers
 			}
 		}
 		
-		public IEnumerable<Point<double>> SortedData
+		public IEnumerable<Point> SortedData
 		{
 			get
 			{
@@ -316,7 +317,7 @@ namespace Plot.Renderers
 			}
 		}
 		
-		public IEnumerable<Point<double>> Data
+		public IEnumerable<Point> Data
 		{
 			get
 			{
@@ -333,12 +334,48 @@ namespace Plot.Renderers
 			}
 		}
 		
-		public IEnumerable<Point<double>> Range(int start)
+		public delegate Point DataGenerator(double x);
+		
+		public void SetData(Range xrange, int samples, DataGenerator generator)
+		{
+			List<Point> data = new List<Point>(samples);
+
+			if (samples == 0)
+			{
+				Data = data;
+				return;
+			}
+			
+			if (samples == 1)
+			{
+				data.Add(generator(xrange.Min));
+				return;
+			}
+			
+			double spend = xrange.Min;
+			
+			for (int i = 0; i < samples; ++i)
+			{
+				data.Add(generator(spend));
+
+				int div = samples - i - 1;
+				
+				if (div > 0)
+				{
+					double df = (xrange.Max - spend) / (samples - i - 1);
+					spend += df;
+				}
+			}
+			
+			Data = data;
+		}
+		
+		public IEnumerable<Point> Range(int start)
 		{
 			return Range(start, d_data.Count - start);
 		}
 		
-		public IEnumerable<Point<double>> Range(int start, int length)
+		public IEnumerable<Point> Range(int start, int length)
 		{
 			int end = Math.Min(start + length, d_data.Count);
 			start = Math.Max(start, 0);
@@ -389,7 +426,7 @@ namespace Plot.Renderers
 			}
 		}
 		
-		protected List<Point<double>> PrivateData
+		protected List<Point> PrivateData
 		{
 			get
 			{
@@ -427,7 +464,7 @@ namespace Plot.Renderers
 			}
 		}
 		
-		public void Append(Point<double> pt)
+		public void Append(Point pt)
 		{
 			d_data.Add(pt);
 			
@@ -437,9 +474,9 @@ namespace Plot.Renderers
 			}
 			else if (d_data.Count > 1 && d_data[d_data.Count - 2].X > pt.X)
 			{
-				d_sortedData = new SortedList<Point<double>>(new PointComparer());
+				d_sortedData = new SortedList<Point>(new PointComparer());
 				
-				foreach (Point<double> item in d_data)
+				foreach (Point item in d_data)
 				{
 					d_sortedData.Add(item);
 				}
@@ -476,7 +513,7 @@ namespace Plot.Renderers
 			return idx < d_data.Count;
 		}
 		
-		public Point<double> this[int idx]
+		public Point this[int idx]
 		{
 			get
 			{
@@ -487,7 +524,7 @@ namespace Plot.Renderers
 				
 				if (idx < 0 || idx >= d_data.Count)
 				{
-					return new Point<double>();
+					return new Point();
 				}
 				else
 				{
@@ -496,25 +533,25 @@ namespace Plot.Renderers
 			}
 		}
 		
-		private void MakeCircle(Cairo.Context context, Point<double> scale, Point<double> item, int idx)
+		private void MakeCircle(Cairo.Context context, Point scale, Point item, int idx)
 		{
 			context.Arc(item.X * scale.X, item.Y * scale.Y, (d_markerSize - d_lineWidth) / 2, 0, 2 * Math.PI);
 		}
 
-		private void RenderCircle(Cairo.Context context, Point<double> scale, Point<double> item, int idx)
+		private void RenderCircle(Cairo.Context context, Point scale, Point item, int idx)
 		{
 			MakeCircle(context, scale, item, idx);
 			context.Stroke();
 		}
 		
-		private void RenderFilledCircle(Cairo.Context context, Point<double> scale, Point<double> item, int idx)
+		private void RenderFilledCircle(Cairo.Context context, Point scale, Point item, int idx)
 		{
 			MakeCircle(context, scale, item, idx);
 			context.FillPreserve();
 			context.Stroke();
 		}
 		
-		private void MakeSquare(Cairo.Context context, Point<double> scale, Point<double> item, int idx)
+		private void MakeSquare(Cairo.Context context, Point scale, Point item, int idx)
 		{
 			double size = d_markerSize - d_lineWidth;
 
@@ -526,20 +563,20 @@ namespace Plot.Renderers
 			context.ClosePath();
 		}
 		
-		private void RenderSquare(Cairo.Context context, Point<double> scale, Point<double> item, int idx)
+		private void RenderSquare(Cairo.Context context, Point scale, Point item, int idx)
 		{
 			MakeSquare(context, scale, item, idx);
 			context.Stroke();
 		}
 		
-		private void RenderFilledSquare(Cairo.Context context, Point<double> scale, Point<double> item, int idx)
+		private void RenderFilledSquare(Cairo.Context context, Point scale, Point item, int idx)
 		{
 			MakeSquare(context, scale, item, idx);
 			context.FillPreserve();
 			context.Stroke();
 		}
 		
-		private void MakeTriangle(Cairo.Context context, Point<double> scale, Point<double> item, int idx)
+		private void MakeTriangle(Cairo.Context context, Point scale, Point item, int idx)
 		{
 			double halfsize = (d_markerSize - d_lineWidth) / 2;
 
@@ -554,13 +591,13 @@ namespace Plot.Renderers
 			context.ClosePath();
 		}
 
-		private void RenderTriangle(Cairo.Context context, Point<double> scale, Point<double> item, int idx)
+		private void RenderTriangle(Cairo.Context context, Point scale, Point item, int idx)
 		{
 			MakeTriangle(context, scale, item, idx);
 			context.Stroke();
 		}
 		
-		private void RenderFilledTriangle(Cairo.Context context, Point<double> scale, Point<double> item, int idx)
+		private void RenderFilledTriangle(Cairo.Context context, Point scale, Point item, int idx)
 		{
 			MakeTriangle(context, scale, item, idx);
 			
@@ -568,7 +605,7 @@ namespace Plot.Renderers
 			context.Stroke();
 		}
 
-		private void RenderCross(Cairo.Context context, Point<double> scale, Point<double> item, int idx)
+		private void RenderCross(Cairo.Context context, Point scale, Point item, int idx)
 		{
 			context.MoveTo(item.X * scale.X, item.Y * scale.Y);
 			context.RelMoveTo(-d_markerSize / 2, -d_markerSize / 2);
@@ -581,7 +618,7 @@ namespace Plot.Renderers
 			context.Stroke();
 		}
 		
-		protected void RenderMarkers(Cairo.Context context, Point<double> scale, int idx, int length)
+		protected void RenderMarkers(Cairo.Context context, Point scale, int idx, int length)
 		{
 			if (d_markerRenderer == null)
 			{
@@ -594,7 +631,7 @@ namespace Plot.Renderers
 
 			int curidx = idx;
 			
-			foreach (Point<double> item in Range(idx, length))
+			foreach (Point item in Range(idx, length))
 			{
 				d_markerRenderer(context, scale, item, curidx);
 				curidx++;
@@ -622,7 +659,7 @@ namespace Plot.Renderers
 			}
 		}
 		
-		protected void RenderLine(Cairo.Context context, Point<double> scale, int idx, int length)
+		protected void RenderLine(Cairo.Context context, Point scale, int idx, int length)
 		{
 			bool first = true;
 			
@@ -630,7 +667,7 @@ namespace Plot.Renderers
 			
 			SetLineStyle(context);
 			
-			foreach (Point<double> item in Range(idx, length))
+			foreach (Point item in Range(idx, length))
 			{
 				if (first)
 				{
@@ -647,7 +684,7 @@ namespace Plot.Renderers
 			context.Restore();
 		}
 		
-		public override void Render(Cairo.Context context, Point<double> scale)
+		public override void Render(Cairo.Context context, Point scale)
 		{
 			if (d_lineType != Line.LineType.None)
 			{
@@ -660,15 +697,15 @@ namespace Plot.Renderers
 			}
 		}
 		
-		private class PointComparer : IComparer<Point<double>>
+		private class PointComparer : IComparer<Point>
 		{		
-			public int Compare(Point<double> a, Point<double> b)
+			public int Compare(Point a, Point b)
 			{
 				return a.X < b.X ? -1 : (a.X > b.X ? 1 : 0);
 			}
 		}
 		
-		public override Point<double> ValueClosestToX(double x)
+		public override Point ValueClosestToX(double x)
 		{
 			bool interpolated;
 			bool extrapolated;
@@ -676,20 +713,20 @@ namespace Plot.Renderers
 			return ValueAtX(x, false, out interpolated, out extrapolated);
 		}
 		
-		public override Point<double> ValueAtX(double x, out bool interpolated, out bool extrapolated)
+		public override Point ValueAtX(double x, out bool interpolated, out bool extrapolated)
 		{
 			return ValueAtX(x, true, out interpolated, out extrapolated);
 		}
 		
-		private Point<double> ValueAtX(double x, bool dointerp, out bool interpolated, out bool extrapolated)
+		private Point ValueAtX(double x, bool dointerp, out bool interpolated, out bool extrapolated)
 		{
 			extrapolated = false;
 			interpolated = false;
 			
 			int idx;
-			Point<double> sp = new Point<double>(x, 0);
+			Point sp = new Point(x, 0);
 			
-			List<Point<double>> data;
+			List<Point> data;
 			
 			if (d_sortedData != null)
 			{
@@ -703,7 +740,7 @@ namespace Plot.Renderers
 			if (data.Count == 0)
 			{
 				extrapolated = true;
-				return new Point<double>(0, 0);
+				return new Point(0, 0);
 			}
 			
 			idx = data.BinarySearch(0, data.Count, sp, s_pointComparer);
@@ -767,14 +804,14 @@ namespace Plot.Renderers
 			}
 			else
 			{
-				Point<double> ps = data[sidx];
-				Point<double> pf = data[fidx];
+				Point ps = data[sidx];
+				Point pf = data[fidx];
 
 				double factor = ps.X == pf.X ? 1 : (ps.X - x) / (ps.X - pf.X);
 				ret = pf.Y * factor + (ps.Y * (1 - factor));
 			}
 			
-			return new Point<double>(x, ret);
+			return new Point(x, ret);
 		}
 		
 		public double[] Sample(double[] sites)

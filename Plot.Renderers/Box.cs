@@ -1,4 +1,5 @@
 using System;
+using Biorob.Math;
 
 namespace Plot.Renderers
 {
@@ -9,7 +10,7 @@ namespace Plot.Renderers
 		private Color d_borderColor;
 		private Color d_backgroundColor;
 		
-		private Point<double> d_origin;
+		private Point d_origin;
 		
 		private Alignment d_xalign;
 		private Alignment d_yalign;
@@ -24,7 +25,7 @@ namespace Plot.Renderers
 			d_xalign = Alignment.Left;
 			d_yalign = Alignment.Top;
 			
-			d_origin = new Point<double>(0, 0);
+			d_origin = new Point(0, 0);
 			d_borderRadius = 0;
 			
 			XRange.Changed += HandleXRangeChanged;
@@ -207,7 +208,7 @@ namespace Plot.Renderers
                 graphics.ClosePath();
         }
 		
-		public override void Render(Cairo.Context context, Point<double> scale)
+		public override void Render(Cairo.Context context, Point scale)
 		{
 			if ((d_borderColor == null || d_borderWidth <= 0) && d_backgroundColor == null)
 			{

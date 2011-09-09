@@ -1,11 +1,12 @@
 using System;
+using Biorob.Math;
 
 namespace Plot.Renderers
 {
 	public abstract class Renderer : Changeable
 	{
-		private Range<double> d_xrange;
-		private Range<double> d_yrange;
+		private Range d_xrange;
+		private Range d_yrange;
 		
 		private Units d_xunits;
 		private Units d_yunits;
@@ -14,7 +15,7 @@ namespace Plot.Renderers
 		
 		public event EventHandler RulerChanged = delegate {};
 		
-		public Range<double> XRange
+		public Range XRange
 		{
 			get
 			{
@@ -22,7 +23,7 @@ namespace Plot.Renderers
 			}
 		}
 		
-		public Range<double> YRange
+		public Range YRange
 		{
 			get
 			{
@@ -32,8 +33,8 @@ namespace Plot.Renderers
 		
 		public Renderer()
 		{
-			d_xrange = new Range<double>();
-			d_yrange = new Range<double>();
+			d_xrange = new Range();
+			d_yrange = new Range();
 			
 			d_hasRuler = false;
 		}
@@ -94,7 +95,7 @@ namespace Plot.Renderers
 			}
 		}
 		
-		public Point<double> ValueAtX(double x)
+		public Point ValueAtX(double x)
 		{
 			bool interpolated;
 			bool extrapolated;
@@ -102,20 +103,20 @@ namespace Plot.Renderers
 			return ValueAtX(x, out interpolated, out extrapolated);
 		}
 		
-		public virtual Point<double> ValueAtX(double x, out bool interpolated, out bool extrapolated)
+		public virtual Point ValueAtX(double x, out bool interpolated, out bool extrapolated)
 		{
 			interpolated = false;
 			extrapolated = true;
 
-			return new Point<double>(0, 0);
+			return new Point(0, 0);
 		}
 		
-		public virtual Point<double> ValueClosestToX(double x)
+		public virtual Point ValueClosestToX(double x)
 		{
-			return new Point<double>(0, 0);
+			return new Point(0, 0);
 		}
 
-		public abstract void Render(Cairo.Context context, Point<double> scale);
+		public abstract void Render(Cairo.Context context, Point scale);
 		
 		public double UnitToPixel(Units units, double val, double scale)
 		{
@@ -128,15 +129,15 @@ namespace Plot.Renderers
 			return val;
 		}
 		
-		public Range<double> XRangePixels(double scale)
+		public Range XRangePixels(double scale)
 		{
-			return new Range<double>(UnitToPixel(d_xunits, d_xrange.Min, scale),
+			return new Range(UnitToPixel(d_xunits, d_xrange.Min, scale),
 			                         UnitToPixel(d_xunits, d_xrange.Max, scale));
 		}
 		
-		public Range<double> YRangePixels(double scale)
+		public Range YRangePixels(double scale)
 		{
-			return new Range<double>(UnitToPixel(d_yunits, d_yrange.Min, scale),
+			return new Range(UnitToPixel(d_yunits, d_yrange.Min, scale),
 			                         UnitToPixel(d_yunits, d_yrange.Max, scale));
 		}
 		

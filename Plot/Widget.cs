@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Biorob.Math;
 
 namespace Plot
 {
@@ -9,25 +10,25 @@ namespace Plot
 	{
 		private struct Ranges
 		{
-			public Range<double> XRange;
-			public Range<double> YRange;
+			public Range XRange;
+			public Range YRange;
 			
-			public Ranges(Range<double> xrange, Range<double> yrange)
+			public Ranges(Range xrange, Range yrange)
 			{
-				XRange = new Range<double>(xrange);
-				YRange = new Range<double>(yrange);
+				XRange = new Range(xrange);
+				YRange = new Range(yrange);
 			}
 		}
 
 		private Graph d_graph;
-		private Point<double> d_button;
-		private Point<double> d_lastMove;
+		private Point d_button;
+		private Point d_lastMove;
 		private bool d_enableMove;
 		private bool d_enableZoom;
 		private bool d_enableSelect;
 		private double d_zoomFactor;
-		private Point<double> d_selectStart;
-		private Point<double> d_selectEnd;
+		private Point d_selectStart;
+		private Point d_selectEnd;
 		private Gtk.ActionGroup d_popupActions;
 		private Stack<Ranges> d_zoomstack;
 		private bool d_overrideDraw;
@@ -200,7 +201,7 @@ namespace Plot
 				return false;
 			}
 
-			Plot.Point<double> pt = new Plot.Point<double>(x, y);
+			Point pt = new Point(x, y);
 			pt = d_graph.PixelToAxis(pt);
 			
 			double factor = zoomin ? d_zoomFactor : 1 / d_zoomFactor;
@@ -311,7 +312,7 @@ namespace Plot
 		
 		protected override bool OnEnterNotifyEvent(Gdk.EventCrossing evnt)
 		{
-			Point<double> pt = new Point<double>(evnt.X, evnt.Y);
+			Point pt = new Point(evnt.X, evnt.Y);
 
 			d_graph.Ruler = pt;
 			
@@ -328,11 +329,11 @@ namespace Plot
 		
 		protected override bool OnMotionNotifyEvent(Gdk.EventMotion evnt)
 		{
-			Plot.Point<double> pt = new Plot.Point<double>(evnt.X, evnt.Y);
+			Point pt = new Point(evnt.X, evnt.Y);
 
 			if (d_graph.Ruler != null)
 			{
-				d_graph.Ruler.Move((int)evnt.X, (int)evnt.Y);
+				d_graph.Ruler.Update(pt);
 			}
 			else
 			{
@@ -341,9 +342,9 @@ namespace Plot
 			
 			if (d_button != null)
 			{			
-				Plot.Point<double> move = d_graph.ScaleFromPixel(new Plot.Point<double>(evnt.X - d_button.X, evnt.Y - d_button.Y));
+				Point move = d_graph.ScaleFromPixel(new Point(evnt.X - d_button.X, evnt.Y - d_button.Y));
 			
-				d_graph.MoveBy(new Plot.Point<double>(-move.X + d_lastMove.X, move.Y - d_lastMove.Y));
+				d_graph.MoveBy(new Point(-move.X + d_lastMove.X, move.Y - d_lastMove.Y));
 				d_lastMove = move;
 				
 				return true;
@@ -381,7 +382,7 @@ namespace Plot
 			return false;
 		}
 
-		private Rectangle<double> NormalizedSelection
+		private Rectangle NormalizedSelection
 		{
 			get
 			{
@@ -390,7 +391,7 @@ namespace Plot
 					return null;
 				}
 				
-				return new Rectangle<double>(Math.Min(d_selectStart.X, d_selectEnd.X),
+				return new Rectangle(Math.Min(d_selectStart.X, d_selectEnd.X),
 				                             Math.Min(d_selectStart.Y, d_selectEnd.Y),
 				                             Math.Abs(d_selectEnd.X - d_selectStart.X),
 				                             Math.Abs(d_selectEnd.Y - d_selectStart.Y));
@@ -512,7 +513,7 @@ namespace Plot
 			
 			GrabFocus();
 			
-			Plot.Point<double> pt = new Point<double>(evnt.X, evnt.Y);
+			Point pt = new Point(evnt.X, evnt.Y);
 			
 			if (d_graph.LabelHitTest(pt))
 			{
@@ -523,7 +524,7 @@ namespace Plot
 			if (d_enableMove && evnt.Button == 2)
 			{
 				d_button = pt;
-				d_lastMove = new Plot.Point<double>(0, 0);
+				d_lastMove = new Point(0, 0);
 				
 				d_zoomstack.Push(new Ranges(d_graph.XAxis, d_graph.YAxis));
 				
@@ -556,15 +557,15 @@ namespace Plot
 			{
 				if (d_enableSelect && evnt.Button == 1 && ValidSelection)
 				{
-					Rectangle<double> r = NormalizedSelection;
+					Rectangle r = NormalizedSelection;
 
-					Point<double> pt1 = d_graph.PixelToAxis(new Point<double>(r.X, r.Y));
-					Point<double> pt2 = d_graph.PixelToAxis(new Point<double>(r.X + r.Width, r.Y + r.Height));
+					Point pt1 = d_graph.PixelToAxis(new Point(r.X, r.Y));
+					Point pt2 = d_graph.PixelToAxis(new Point(r.X + r.Width, r.Y + r.Height));
 					
 					d_zoomstack.Push(new Ranges(d_graph.XAxis, d_graph.YAxis));
 					
-					d_graph.UpdateAxis(new Range<double>(pt1.X, pt2.X),
-					                   new Range<double>(pt2.Y, pt1.Y));
+					d_graph.UpdateAxis(new Range(pt1.X, pt2.X),
+					                   new Range(pt2.Y, pt1.Y));
 				}
 				
 				d_selectStart = null;
@@ -577,7 +578,7 @@ namespace Plot
 			{
 				Renderers.Renderer renderer;
 
-				if (d_graph.LabelHitTest(new Point<double>(evnt.X, evnt.Y), out renderer))
+				if (d_graph.LabelHitTest(new Point(evnt.X, evnt.Y), out renderer))
 				{
 					renderer.HasRuler = !renderer.HasRuler;
 				}
@@ -798,7 +799,7 @@ namespace Plot
 			Export.Exporter ex = (Export.Exporter)info.Invoke(new object[] {filename, d_graph.Dimensions.Width, d_graph.Dimensions.Height});
 			
 			ex.Do(() => {
-				ex.Export(d_graph, new Rectangle<int>(0, 0, ex.Width, ex.Height));
+				ex.Export(d_graph, new Rectangle(0, 0, ex.Width, ex.Height));
 			});
 		}
 		

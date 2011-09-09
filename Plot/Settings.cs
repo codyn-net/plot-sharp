@@ -4,6 +4,7 @@ using System.Xml;
 using System.IO;
 using System.Text;
 using System.Reflection;
+using Biorob.Math;
 
 namespace Plot
 {
@@ -35,9 +36,9 @@ namespace Plot
 		public string GridColor { get; set; }
 		public AxisMode XAxisMode { get; set; }
 		public AxisMode YAxisMode { get; set; }
-		public Point<double> AutoMargin { get; set; }
-		public Range<double> XAxis { get; set; }
-		public Range<double> YAxis { get; set; }
+		public Point AutoMargin { get; set; }
+		public Range XAxis { get; set; }
+		public Range YAxis { get; set; }
 		
 		public Settings()
 		{
@@ -59,10 +60,10 @@ namespace Plot
 			XAxisMode = AxisMode.Auto;
 			YAxisMode = AxisMode.Auto;
 			
-			AutoMargin = new Point<double>(0, 0.05);
+			AutoMargin = new Point(0, 0.05);
 			
-			XAxis = new Range<double>(0, 1);
-			YAxis = new Range<double>(-1, 1);
+			XAxis = new Range(0, 1);
+			YAxis = new Range(-1, 1);
 			
 			AxisAspect = 1;
 			
@@ -159,7 +160,7 @@ namespace Plot
 			graph.AxisLabelColors.Bg.Update(AxisLabelColorsBg);
 			graph.GridColor.Update(GridColor);
 			
-			graph.AutoMargin.Move(AutoMargin);
+			graph.AutoMargin.Update(AutoMargin);
 		}
 		
 		public void Get(Graph graph)
@@ -195,7 +196,7 @@ namespace Plot
 			AxisLabelColorsBg = graph.AxisLabelColors.Bg.Hex;
 			GridColor = graph.GridColor.Hex;
 			
-			AutoMargin.Move(graph.AutoMargin);
+			AutoMargin.Update(graph.AutoMargin);
 		}
 		
 		public override bool Equals(object obj)

@@ -1,4 +1,5 @@
 using System;
+using Biorob.Math;
 
 namespace Plot.Renderers
 {
@@ -131,7 +132,7 @@ namespace Plot.Renderers
 			}
 		}
 		
-		public override void Render(Cairo.Context context, Point<double> scale)
+		public override void Render(Cairo.Context context, Point scale)
 		{
 			if (d_recalculate)
 			{

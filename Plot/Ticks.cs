@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections;
+using Biorob.Math;
 
 namespace Plot
 {
@@ -158,13 +159,13 @@ namespace Plot
 			return b * Math.Floor(n / b);
 		}
 		
-		internal void Update(Range<double> range, int pixelSpan)
+		internal void Update(Range range, int pixelSpan)
 		{
 			d_ticks.Clear();
 
 			// Copied from flot library			
 			double num = 0.3 * Math.Sqrt(pixelSpan);
-			double span = range.Span();
+			double span = range.Span;
 			double delta = span / num;
 			
 			double dec = -Math.Floor(Math.Log10(delta));
