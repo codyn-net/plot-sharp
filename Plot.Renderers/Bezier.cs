@@ -3,7 +3,7 @@ using Biorob.Math.Interpolation;
 using System.Collections.Generic;
 using Biorob.Math;
 using Biorob.Math.Functions;
-
+using System.Linq;
 namespace Plot.Renderers
 {
 	public class Bezier : Line
@@ -19,6 +19,21 @@ namespace Plot.Renderers
 			if (d_polynomial != null)
 			{
 				d_bezier = new Biorob.Math.Functions.Bezier(d_polynomial);
+				
+				List<Point> pts = new List<Point>();
+				
+				foreach (Biorob.Math.Functions.PiecewisePolynomial.Piece piece in polynomial.Pieces)
+				{
+					pts.Add(new Point(piece.Begin, piece.Coefficients[piece.Coefficients.Length - 1]));
+				}
+				
+				if (polynomial.Count > 0)
+				{
+					Biorob.Math.Functions.PiecewisePolynomial.Piece piece = polynomial[polynomial.Count - 1];
+					pts.Add(new Point(piece.End, piece.Coefficients.Sum()));
+				}
+				
+				base.Data = pts;
 			}
 		}
 
