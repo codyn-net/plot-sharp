@@ -626,7 +626,12 @@ namespace Plot.Renderers
 			}
 			
 			context.Save();
-			d_color.Set(context);
+			
+			if (d_color != null)
+			{
+				d_color.Set(context);
+			}
+
 			context.LineWidth = LineWidth;
 
 			int curidx = idx;
@@ -642,7 +647,11 @@ namespace Plot.Renderers
 		
 		protected void SetLineStyle(Cairo.Context context)
 		{
-			d_color.Set(context);
+			if (d_color != null)
+			{
+				d_color.Set(context);
+			}
+
 			context.LineWidth = d_lineWidth;
 			
 			switch (d_lineType)
