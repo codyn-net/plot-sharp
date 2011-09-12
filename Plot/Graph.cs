@@ -833,7 +833,15 @@ namespace Plot
 				}
 			}
 			
-			axis.Update(axis.Widen(margin));
+			if (margin == 0 && axis.Span <= Constants.Epsilon)
+			{
+				axis.Update(axis.Widen(1));
+			}
+			else
+			{
+				axis.Update(axis.Widen(margin));
+			}
+
 			CheckAspect();
 
 			axis.Thaw();
