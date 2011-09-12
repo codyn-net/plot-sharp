@@ -336,7 +336,7 @@ namespace Plot.Renderers
 		
 		public delegate Point DataGenerator(double x);
 		
-		public void SetData(Range xrange, int samples, DataGenerator generator)
+		public void GenerateData(Range xrange, int samples, DataGenerator generator)
 		{
 			List<Point> data = new List<Point>(samples);
 
