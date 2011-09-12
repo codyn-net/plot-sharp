@@ -16,6 +16,10 @@ namespace Plot
 		private bool d_snapRulerToData;
 		private bool d_showRulerAxis;
 		private bool d_autoRecolor;
+		private bool d_rulerTracksData;
+		private bool d_snapRulerToAxis;
+		private int d_snapRulerToAxisFactor;
+
 		private Point d_autoMargin;
 
 		private List<Renderers.Renderer> d_renderers;
@@ -111,7 +115,6 @@ namespace Plot
 			d_labelRegions = new Dictionary<Renderers.ILabeled, Rectangle>();
 			
 			d_xaxis.Changed += delegate {
-				Console.WriteLine(d_xaxis);
 				CheckAspect();
 				
 				UpdateXTicks();
@@ -214,6 +217,45 @@ namespace Plot
 							AxisModeChanged(ref d_yaxisMode, d_yaxis, d_renderersYRange, d_autoMargin.Y);
 						}
 					}
+				}
+			}
+		}
+		
+		public bool SnapRulerToAxis
+		{
+			get { return d_snapRulerToAxis; }
+			set
+			{
+				if (d_snapRulerToAxis != value)
+				{
+					d_snapRulerToAxis = value;
+					EmitRequestRedraw();
+				}
+			}
+		}
+		
+		public int SnapRulerToAxisFactor
+		{
+			get { return d_snapRulerToAxisFactor; }
+			set
+			{
+				if (d_snapRulerToAxisFactor != value)
+				{
+					d_snapRulerToAxisFactor = value;
+					EmitRequestRedraw();
+				}
+			}
+		}
+		
+		public bool RulerTracksData
+		{
+			get { return d_rulerTracksData; }
+			set
+			{
+				if (d_rulerTracksData != value)
+				{
+					d_rulerTracksData = value;
+					EmitRequestRedraw();
 				}
 			}
 		}
@@ -935,7 +977,7 @@ namespace Plot
 				Point scale = Scale;
 				
 				return new Point(-d_xaxis.Min * scale.X,
-				                         -d_yaxis.Max * scale.Y);
+				                 -d_yaxis.Max * scale.Y);
 			}
 		}
 		
@@ -1071,14 +1113,19 @@ namespace Plot
 			}
 		}
 		
-		private double RoundInBase(double r, double b)
+		private double RoundInShift(double r, double b)
 		{
 			if (r % 1 == 0)
 			{
-				return r - Math.Sign(r) * 0.5;
+				 return r - Math.Sign(r) * b;
 			}
 
 			return Math.Round(r - b) + b;
+		}
+		
+		private double RoundInBase(double r, double b)
+		{
+			return Math.Round(r / b) * b;
 		}
 		
 		private delegate void TicksRenderer(double coord, double v);
@@ -1088,7 +1135,7 @@ namespace Plot
 			Point scale = Scale;
 			Point tr = AxisTransform;
 			
-			return new Point(tr.X + p.X * scale.X, tr.Y + p.Y * scale.Y);
+			return new Point(tr.X + p.X * scale.X, -tr.Y - p.Y * scale.Y);
 		}
 		
 		private void DrawTicks(Cairo.Context ctx, Ticks ticks, int i, TicksRenderer renderer)
@@ -1098,7 +1145,7 @@ namespace Plot
 			
 			foreach (double p in ticks)
 			{
-				double o = RoundInBase(tr[i] + p * scale[i], 0.5);
+				double o = RoundInShift(tr[i] + p * scale[i], 0.5);
 
 				renderer(o, p);
 			}
@@ -1113,7 +1160,7 @@ namespace Plot
 
 				if (d_yaxis.Span > 0)
 				{
-					axisy = -RoundInBase(tr.Y, 0.5);
+					axisy = -RoundInShift(tr.Y, 0.5);
 				}
 
 				DrawAxisNumber(ctx,
@@ -1205,7 +1252,7 @@ namespace Plot
 				
 				if (d_xaxis.Span > 0)
 				{
-					axisx = RoundInBase(d_dimensions.Width / d_xaxis.Span * -d_xaxis.Min, 0.5);
+					axisx = RoundInShift(d_dimensions.Width / d_xaxis.Span * -d_xaxis.Min, 0.5);
 				}
 
 				DrawAxisNumber(ctx,
@@ -1303,7 +1350,7 @@ namespace Plot
 			
 			if (d_xaxis.Span > 0)
 			{
-				axisx = RoundInBase(d_dimensions.Width / d_xaxis.Span * -d_xaxis.Min, 0.5);
+				axisx = RoundInShift(d_dimensions.Width / d_xaxis.Span * -d_xaxis.Min, 0.5);
 			}
 				
 			DrawYTicks(ctx, d_yticks, axisx, axisx - d_yticks.Length / 2);
@@ -1333,7 +1380,7 @@ namespace Plot
 
 			if (d_yaxis.Span > 0)
 			{
-				axisy = -RoundInBase(tr.Y, 0.5);
+				axisy = -RoundInShift(tr.Y, 0.5);
 			}
 			
 			DrawXTicks(ctx, d_xticks, axisy, axisy + d_xticks.Length / 2);
@@ -1356,7 +1403,7 @@ namespace Plot
 			
 			if (d_yaxis.Span > 0)
 			{
-				axisy = -RoundInBase(tr.Y, 0.5);
+				axisy = -RoundInShift(tr.Y, 0.5);
 			}
 			
 			axisylbl = axisy + d_yticks.Length / 2;
@@ -1377,7 +1424,7 @@ namespace Plot
 			
 			if (d_xaxis.Span > 0)
 			{
-				axisx = RoundInBase(d_dimensions.Width / d_xaxis.Span * -d_xaxis.Min, 0.5);
+				axisx = RoundInShift(d_dimensions.Width / d_xaxis.Span * -d_xaxis.Min, 0.5);
 			}
 			
 			axisxlbl = axisx - d_xticks.Length / 2;
@@ -1636,6 +1683,15 @@ namespace Plot
 			d_previousAxisOrigin = new Point(d_xaxis.Min, d_yaxis.Min);
 		}
 		
+		public Point SnapToAxis(Point inaxis, int factor)
+		{
+			double xb = d_xticks.CalculatedTickSize / factor;
+			double yb = d_yticks.CalculatedTickSize / factor;
+			
+			return new Point(RoundInBase(inaxis.X, xb),
+			                 RoundInBase(inaxis.Y, yb));
+		}
+		
 		private void DrawRuler(Cairo.Context ctx)
 		{
 			if (d_ruler == null)
@@ -1649,13 +1705,20 @@ namespace Plot
 			Point tr = AxisTransform;
 			Point pos = PixelToAxis(d_ruler);
 			
+			if (!d_rulerTracksData && !d_snapRulerToData && d_snapRulerToAxis)
+			{
+				pos = SnapToAxis(pos, d_snapRulerToAxisFactor);
+			}
+			
+			Point pixels = AxisToPixel(pos);
+			
 			bool freestyle = true;
 			bool first = true;
 			
 			Point scale = Scale;
-			double x = RoundInBase(d_ruler.X, 0.5);
+			double x = RoundInShift(pixels.X, 0.5);
 			
-			if (!d_snapRulerToData && d_showRulerAxis)
+			if ((!d_snapRulerToData || !d_rulerTracksData) && d_showRulerAxis)
 			{
 				// Draw yline
 				ctx.MoveTo(x, 0);
@@ -1663,122 +1726,125 @@ namespace Plot
 				ctx.Stroke();
 			}
 			
-			foreach (Renderers.Renderer renderer in d_renderers)
+			if (d_rulerTracksData)
 			{
-				if (!renderer.CanRule || !renderer.HasRuler)
+				foreach (Renderers.Renderer renderer in d_renderers)
 				{
-					continue;
-				}
-
-				bool interpolated;
-				bool extrapolated;
-
-				Point val;
-				
-				if (d_snapRulerToData)
-				{
-					interpolated = false;
-					extrapolated = false;
-
-					val = renderer.ValueClosestToX(pos.X);
-					
-					if (first)
+					if (!renderer.CanRule || !renderer.HasRuler)
 					{
-						first = false;
-						 
-						x = RoundInBase(tr.X + val.X * scale.X, 0.5);
+						continue;
+					}
 	
-						// Draw yline
-						if (d_showRulerAxis)
+					bool interpolated;
+					bool extrapolated;
+	
+					Point val;
+					
+					if (d_snapRulerToData)
+					{
+						interpolated = false;
+						extrapolated = false;
+	
+						val = renderer.ValueClosestToX(pos.X);
+						
+						if (first)
 						{
-							ctx.MoveTo(x, 0);
-							ctx.LineTo(x, d_dimensions.Height);
-							ctx.Stroke();
+							first = false;
+							 
+							x = RoundInShift(tr.X + val.X * scale.X, 0.5);
+		
+							// Draw yline
+							if (d_showRulerAxis)
+							{
+								ctx.MoveTo(x, 0);
+								ctx.LineTo(x, d_dimensions.Height);
+								ctx.Stroke();
+							}
 						}
 					}
-				}
-				else
-				{
-					val = renderer.ValueAtX(pos.X, out interpolated, out extrapolated);
-				}
-				
-				if (extrapolated)
-				{
-					continue;
-				}
-				
-				freestyle = false;
-				
-				double y = RoundInBase(-tr.Y + val.Y * -scale.Y, 0.5);
+					else
+					{
+						val = renderer.ValueAtX(pos.X, out interpolated, out extrapolated);
+					}
+					
+					if (extrapolated)
+					{
+						continue;
+					}
+					
+					freestyle = false;
+					
+					double y = RoundInShift(-tr.Y + val.Y * -scale.Y, 0.5);
+		
+					// Draw xline
+					Renderers.IColored colored = renderer as Renderers.IColored;
+					ColorFgBg fgbg = new ColorFgBg();
+		
+					fgbg.Bg.Update(d_rulerLabelColors.Bg);
+					fgbg.Fg.Update(d_rulerLabelColors.Fg);
+					
+					if (colored != null && colored.Color != null)
+					{
+						Color c = new Color(colored.Color);
+						c.A *= 0.5;
 	
-				// Draw xline
-				Renderers.IColored colored = renderer as Renderers.IColored;
-				ColorFgBg fgbg = new ColorFgBg();
+						c.Set(ctx);
+						fgbg.Fg.Update(colored.Color);
+					}
+					
+					if (d_showRulerAxis)
+					{	
+						ctx.MoveTo(0, y);
+						ctx.RelLineTo(d_dimensions.Width, 0);
+						ctx.Stroke();
+					}
 	
-				fgbg.Bg.Update(d_rulerLabelColors.Bg);
-				fgbg.Fg.Update(d_rulerLabelColors.Fg);
-				
-				if (colored != null && colored.Color != null)
-				{
-					Color c = new Color(colored.Color);
-					c.A *= 0.5;
-
-					c.Set(ctx);
-					fgbg.Fg.Update(colored.Color);
-				}
-				
-				if (d_showRulerAxis)
-				{	
-					ctx.MoveTo(0, y);
-					ctx.RelLineTo(d_dimensions.Width, 0);
+					// Draw circle
+					ctx.LineWidth = 1;
+					ctx.Arc(tr.X + val.X * scale.X,
+					        -tr.Y + val.Y * -scale.Y,
+					        4, 0, 2 * Math.PI);
+		
+					d_backgroundColor.Set(ctx);
+					ctx.FillPreserve();
+					
+					d_rulerColor.Set(ctx);
 					ctx.Stroke();
+	
+					double axislbl;
+					double dontcare;
+					
+					YForXAxisLabel(out dontcare, out axislbl);
+					
+					// Draw x value
+					DrawAxisNumber(ctx,
+					               val.X,
+					               x,
+					               axislbl,
+					               2,
+					               2,
+					               Alignment.Center,
+					               Alignment.Top,
+					               d_rulerLabelColors);
+		
+					XForYAxisLabel(out dontcare, out axislbl);
+		
+					// Draw y value
+					DrawAxisNumber(ctx,
+					               val.Y,
+					               axislbl,
+					               y,
+					               2,
+					               2,
+					               Alignment.Right,
+					               Alignment.Center,
+					               fgbg);
 				}
-
-				// Draw circle
-				ctx.LineWidth = 1;
-				ctx.Arc(tr.X + val.X * scale.X,
-				        -tr.Y + val.Y * -scale.Y,
-				        4, 0, 2 * Math.PI);
-	
-				d_backgroundColor.Set(ctx);
-				ctx.FillPreserve();
-				
-				d_rulerColor.Set(ctx);
-				ctx.Stroke();
-
-				double axislbl;
-				double dontcare;
-				
-				YForXAxisLabel(out dontcare, out axislbl);
-				
-				// Draw x value
-				DrawAxisNumber(ctx,
-				               val.X,
-				               x,
-				               axislbl,
-				               2,
-				               2,
-				               Alignment.Center,
-				               Alignment.Top,
-				               d_rulerLabelColors);
-	
-				XForYAxisLabel(out dontcare, out axislbl);
-	
-				// Draw y value
-				DrawAxisNumber(ctx,
-				               val.Y,
-				               axislbl,
-				               y,
-				               2,
-				               2,
-				               Alignment.Right,
-				               Alignment.Center,
-				               fgbg);
 			}
 			
 			if (freestyle)
 			{
-				if (d_snapRulerToData)
+				if (d_snapRulerToData && d_rulerTracksData)
 				{
 					// Draw yline
 					ctx.MoveTo(x, 0);
@@ -1786,7 +1852,7 @@ namespace Plot
 					ctx.Stroke();
 				}
 				
-				double py = RoundInBase(d_ruler.Y, 0.5);
+				double py = RoundInShift(pixels.Y, 0.5);
 				
 				// If there is not data to track, draw xline on pointer			
 				ctx.MoveTo(0, py);
@@ -2150,7 +2216,7 @@ namespace Plot
 		public Point PixelToAxis(Point pt)
 		{
 			return new Point(d_xaxis.Min + pt.X * ((d_xaxis.Max - d_xaxis.Min) / d_dimensions.Width),
-			                         d_yaxis.Min + (d_dimensions.Height - pt.Y) * ((d_yaxis.Max - d_yaxis.Min) / d_dimensions.Height));
+			                 d_yaxis.Min + (d_dimensions.Height - pt.Y) * ((d_yaxis.Max - d_yaxis.Min) / d_dimensions.Height));
 		}
 		
 		public Point ScaleFromPixel(Point pt)

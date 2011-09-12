@@ -25,7 +25,10 @@ namespace Plot
 		public bool Antialias { get; set; }
 		public bool SnapRulerToData { get; set; }
 		public bool ShowRulerAxis { get; set; }
+		public bool SnapRulerToAxis { get; set; }
+		public int SnapRulerToAxisFactor { get; set; }
 		public bool AutoRecolor { get; set; }
+		public bool RulerTracksData { get; set; }
 		public double AxisAspect { get; set; }
 		public string AxisColor { get; set; }		
 		public string BackgroundColor { get; set; }
@@ -58,6 +61,9 @@ namespace Plot
 			ShowRuler = true;
 			ShowRulerAxis = true;
 			AutoRecolor = true;
+			RulerTracksData = true;
+			SnapRulerToAxis = false;
+			SnapRulerToAxisFactor = 10;
 			
 			XAxisMode = AxisMode.Auto;
 			YAxisMode = AxisMode.Auto;
@@ -147,6 +153,9 @@ namespace Plot
 			graph.Antialias = Antialias;
 			graph.SnapRulerToData = SnapRulerToData;
 			graph.AutoRecolor = AutoRecolor;
+			graph.RulerTracksData = RulerTracksData;
+			graph.SnapRulerToAxis = SnapRulerToAxis;
+			graph.SnapRulerToAxisFactor = SnapRulerToAxisFactor;
 			
 			graph.XAxis.Update(XAxis);
 			graph.YAxis.Update(YAxis);
@@ -175,6 +184,9 @@ namespace Plot
 			ShowLabels = graph.ShowLabels;
 			ShowRulerAxis = graph.ShowRulerAxis;
 			AutoRecolor = graph.AutoRecolor;
+			RulerTracksData = graph.RulerTracksData;
+			SnapRulerToAxis = graph.SnapRulerToAxis;
+			SnapRulerToAxisFactor = graph.SnapRulerToAxisFactor;
 
 			ShowRangeLabels = graph.ShowRangeLabels;
 			ShowXTicks = graph.XTicks.Visible;

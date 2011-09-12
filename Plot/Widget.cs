@@ -32,6 +32,7 @@ namespace Plot
 		private Gtk.ActionGroup d_popupActions;
 		private Stack<Ranges> d_zoomstack;
 		private bool d_overrideDraw;
+		private int d_previousRulerToAxisFactor;
 		
 		public delegate void PopulatePopupHandler(object source, Gtk.UIManager manager);
 		public event PopulatePopupHandler PopulatePopup = delegate {};
@@ -829,6 +830,37 @@ namespace Plot
 			ExportFilename("png", delegate (string filename) {
 				FileExport(typeof(Export.Png), filename);
 			});
+		}
+		
+		protected override bool OnKeyPressEvent(Gdk.EventKey evnt)
+		{
+			switch (evnt.Key)
+			{
+				case Gdk.Key.Control_L:
+				case Gdk.Key.Control_R:
+					d_previousRulerToAxisFactor = d_graph.SnapRulerToAxisFactor;
+					d_graph.SnapRulerToAxisFactor *= 2;
+				break;
+				default:
+				break;
+			}
+
+			return base.OnKeyPressEvent(evnt);
+		}
+		
+		protected override bool OnKeyReleaseEvent(Gdk.EventKey evnt)
+		{
+			switch (evnt.Key)
+			{
+				case Gdk.Key.Control_L:
+				case Gdk.Key.Control_R:
+					d_graph.SnapRulerToAxisFactor = d_previousRulerToAxisFactor;
+				break;
+				default:
+				break;
+			}
+
+			return base.OnKeyReleaseEvent (evnt);
 		}
 	}
 }
