@@ -694,6 +694,14 @@ namespace Plot
 			
 			UpdateColors();
 			
+			Renderers.IColored colored = renderer as Renderers.IColored;
+			
+			if (colored != null && colored.Color == null && !d_autoRecolor)
+			{
+				// Still assign a color
+				colored.Color = d_colorMap[0];
+			}
+			
 			if (d_renderers.Count == 1)
 			{
 				renderer.HasRuler = true;
