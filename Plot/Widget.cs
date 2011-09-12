@@ -331,6 +331,11 @@ namespace Plot
 		protected override bool OnMotionNotifyEvent(Gdk.EventMotion evnt)
 		{
 			Point pt = new Point(evnt.X, evnt.Y);
+			
+			if (d_graph.SnapRulerToAxis && !d_graph.SnapRulerToData)
+			{
+				pt = d_graph.AxisToPixel(d_graph.SnapToAxis(d_graph.PixelToAxis(pt), d_graph.SnapRulerToAxisFactor));
+			}
 
 			if (d_graph.Ruler != null)
 			{
@@ -393,9 +398,9 @@ namespace Plot
 				}
 				
 				return new Rectangle(Math.Min(d_selectStart.X, d_selectEnd.X),
-				                             Math.Min(d_selectStart.Y, d_selectEnd.Y),
-				                             Math.Abs(d_selectEnd.X - d_selectStart.X),
-				                             Math.Abs(d_selectEnd.Y - d_selectStart.Y));
+				                     Math.Min(d_selectStart.Y, d_selectEnd.Y),
+				                     Math.Abs(d_selectEnd.X - d_selectStart.X),
+				                     Math.Abs(d_selectEnd.Y - d_selectStart.Y));
 			}
 		}
 		
@@ -516,6 +521,11 @@ namespace Plot
 			
 			Point pt = new Point(evnt.X, evnt.Y);
 			
+			if (d_graph.SnapRulerToAxis && !d_graph.SnapRulerToData)
+			{
+				pt = d_graph.AxisToPixel(d_graph.SnapToAxis(d_graph.PixelToAxis(pt), d_graph.SnapRulerToAxisFactor));
+			}
+			
 			if (d_graph.LabelHitTest(pt))
 			{
 				return base.OnButtonPressEvent(evnt);
@@ -563,6 +573,12 @@ namespace Plot
 					Point pt1 = d_graph.PixelToAxis(new Point(r.X, r.Y));
 					Point pt2 = d_graph.PixelToAxis(new Point(r.X + r.Width, r.Y + r.Height));
 					
+					if (d_graph.SnapRulerToAxis && !d_graph.SnapRulerToData)
+					{
+						pt1 = d_graph.SnapToAxis(pt1, d_graph.SnapRulerToAxisFactor);
+						pt2 = d_graph.SnapToAxis(pt2, d_graph.SnapRulerToAxisFactor);
+					}
+					
 					d_zoomstack.Push(new Ranges(d_graph.XAxis, d_graph.YAxis));
 					
 					d_graph.UpdateAxis(new Range(pt1.X, pt2.X),
@@ -578,7 +594,7 @@ namespace Plot
 			if (evnt.Button == 1)
 			{
 				Renderers.Renderer renderer;
-
+				
 				if (d_graph.LabelHitTest(new Point(evnt.X, evnt.Y), out renderer))
 				{
 					renderer.HasRuler = !renderer.HasRuler;
@@ -586,6 +602,16 @@ namespace Plot
 			}
 			
 			return false;
+		}
+		
+		private double RoundInShift(double r, double b)
+		{
+			if (r % 1 == 0)
+			{
+				 return r - Math.Sign(r) * b;
+			}
+
+			return Math.Round(r - b) + b;
 		}
 		
 		private void DrawSelection(Cairo.Context ctx)
@@ -596,8 +622,11 @@ namespace Plot
 			}
 			
 			ctx.LineWidth = 1;
-
-			ctx.Rectangle(d_selectStart.X + 0.5, d_selectStart.Y + 0.5, d_selectEnd.X - d_selectStart.X, d_selectEnd.Y - d_selectStart.Y);
+			
+			ctx.Rectangle(RoundInShift(d_selectStart.X, 0.5),
+			              RoundInShift(d_selectStart.Y, 0.5),
+			              d_selectEnd.X - d_selectStart.X,
+			              d_selectEnd.Y - d_selectStart.Y);
 			
 			ctx.SetSourceRGBA(d_graph.RulerColor.R, d_graph.RulerColor.G, d_graph.RulerColor.B, d_graph.RulerColor.A * 0.2);
 			ctx.FillPreserve();
