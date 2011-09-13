@@ -19,6 +19,7 @@ namespace Plot
 		private bool d_rulerTracksData;
 		private bool d_snapRulerToAxis;
 		private int d_snapRulerToAxisFactor;
+		private bool d_showSnapGrid;
 
 		private Point d_autoMargin;
 
@@ -189,6 +190,19 @@ namespace Plot
 			get
 			{
 				return d_colorMap;
+			}
+		}
+		
+		public bool ShowSnapGrid
+		{
+			get { return d_showSnapGrid; }
+			set
+			{
+				if (d_showSnapGrid != value)
+				{
+					d_showSnapGrid = value;
+					Redraw();
+				}
 			}
 		}
 
@@ -1227,6 +1241,29 @@ namespace Plot
 			});
 		}
 		
+		private void DrawSnappyGrid(Cairo.Context ctx, Ticks ticks, int idx, TicksRenderer renderer)
+		{
+			if (!d_showGrid || !d_showSnapGrid || !d_snapRulerToAxis || d_snapRulerToData || d_snapRulerToAxisFactor <= 1)
+			{
+				return;
+			}
+
+			Point scale = Scale;
+			Point tr = AxisTransform;
+			
+			double dd = ticks.CalculatedTickSize / d_snapRulerToAxisFactor;
+			
+			foreach (double p in ticks)
+			{
+				for (int i = 1; i < d_snapRulerToAxisFactor; ++i)
+				{
+					double v = p + dd * i;
+					double o = RoundInShift(tr[idx] + v * scale[idx], 0.5);
+					renderer(o, v);
+				}
+			}
+		}
+		
 		private void DrawXTicks(Cairo.Context ctx, Ticks ticks, double y, double ylbl)
 		{
 			if (!ticks.Visible)
@@ -1235,6 +1272,18 @@ namespace Plot
 			}
 
 			y -= ticks.Length / 2;
+			
+			DrawSnappyGrid(ctx, ticks, 0, delegate (double x, double v) {
+				
+				if (v > d_xaxis.Max || v < d_xaxis.Min || v == 0)
+				{
+					return;
+				}
+				
+				d_gridColor.Set(ctx);
+				ctx.MoveTo(x, 0);
+				ctx.RelLineTo(0, d_dimensions.Height);
+			});
 
 			DrawTicks(ctx, ticks, 0, delegate (double x, double v) {
 				if (v > d_xaxis.Max || v < d_xaxis.Min || v == 0)
@@ -1327,6 +1376,18 @@ namespace Plot
 			}
 
 			x -= ticks.Length / 2;
+			
+			DrawSnappyGrid(ctx, ticks, 1, delegate (double y, double v) {
+				if (v > d_yaxis.Max || v < d_yaxis.Min || v == 0)
+				{
+					return;
+				}
+				
+				d_gridColor.Set(ctx);
+
+				ctx.MoveTo(0, -y);
+				ctx.RelLineTo(d_dimensions.Width, 0);
+			});
 
 			DrawTicks(ctx, ticks, 1, delegate (double y, double v) {
 				if (v == 0 || v > d_yaxis.Max || v < d_yaxis.Min)

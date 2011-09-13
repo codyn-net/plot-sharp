@@ -14,6 +14,7 @@ namespace Plot
 		public bool ShowAxis { get; set; }
 		public bool ShowBox { get; set; }
 		public bool ShowGrid { get; set; }
+		public bool ShowSnapGrid { get; set; }
 		public bool ShowRuler { get; set; }	
 		public bool ShowLabels { get; set; }		
 		public bool ShowRangeLabels { get; set; }		
@@ -64,6 +65,7 @@ namespace Plot
 			RulerTracksData = true;
 			SnapRulerToAxis = false;
 			SnapRulerToAxisFactor = 10;
+			ShowSnapGrid = true;
 			
 			XAxisMode = AxisMode.Auto;
 			YAxisMode = AxisMode.Auto;
@@ -140,6 +142,7 @@ namespace Plot
 			graph.ShowAxis = ShowAxis;
 			graph.ShowBox = ShowBox;
 			graph.ShowGrid = ShowGrid;
+			graph.ShowSnapGrid = ShowSnapGrid;
 			graph.ShowRuler = ShowRuler;
 			graph.ShowRulerAxis = ShowRulerAxis;
 			graph.ShowLabels = ShowLabels;
@@ -180,6 +183,7 @@ namespace Plot
 			ShowAxis = graph.ShowAxis;
 			ShowBox = graph.ShowBox;
 			ShowGrid = graph.ShowGrid;
+			ShowSnapGrid = graph.ShowSnapGrid;
 			ShowRuler = graph.ShowRuler;
 			ShowLabels = graph.ShowLabels;
 			ShowRulerAxis = graph.ShowRulerAxis;

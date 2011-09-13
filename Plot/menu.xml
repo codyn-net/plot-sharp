@@ -5,6 +5,7 @@
     	<menuitem name="ShowTicks" action="ActionShowTicks" />
     	<menuitem name="ShowTickLabels" action="ActionShowTickLabels" />
     	<menuitem name="ShowGrid" action="ActionShowGrid" />
+    	<menuitem name="ShowSnapGrid" action="ActionShowSnapGrid" />
     	<menuitem name="ShowBox" action="ActionShowBox" />
 	    <menuitem name="ShowRuler" action="ActionShowRuler" />
 	    <menuitem name="ShowRulerAxis" action="ActionShowRulerAxis" />
@@ -13,6 +14,7 @@
 		<placeholder name="ShowPlaceholder"/>
     </menu>
     <menuitem name="SnapRuler" action="ActionSnapRuler" />
+    <menuitem name="SnapRulerAxis" action="ActionSnapRulerAxis" />
 	<separator/>
 	<menuitem name="KeepAspect" action="ActionKeepAspect" />
 	<menuitem name="AutoAxis" action="ActionAutoAxis" />

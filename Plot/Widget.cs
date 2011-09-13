@@ -62,11 +62,13 @@ namespace Plot
 				new Gtk.ToggleActionEntry("ActionShowTicks", null, "Ticks", null, null, OnActionShowTicks, true),
 				new Gtk.ToggleActionEntry("ActionShowTickLabels", null, "Tick Labels", null, null, OnActionShowTickLabels, true),
 				new Gtk.ToggleActionEntry("ActionShowGrid", null, "Grid", null, null, OnActionShowGrid, d_graph.ShowGrid),
+				new Gtk.ToggleActionEntry("ActionShowSnapGrid", null, "Snap Grid", null, null, OnActionShowSnapGrid, d_graph.ShowSnapGrid),
 				new Gtk.ToggleActionEntry("ActionKeepAspect", null, "Keep Aspect Ratio", null, null, OnActionKeepAspect, d_graph.KeepAspect),
 				new Gtk.ToggleActionEntry("ActionShowLabels", null, "Labels", null, null, OnActionShowLabels, d_graph.ShowLabels),
 				new Gtk.ToggleActionEntry("ActionShowBox", null, "Box", null, null, OnActionShowBox, d_graph.ShowBox),
 				new Gtk.ToggleActionEntry("ActionShowAxis", null, "Axis", null, null, OnActionShowAxis, d_graph.ShowAxis),
-				new Gtk.ToggleActionEntry("ActionSnapRuler", null, "Snap Ruler to Data", null, null, OnActionSnapRulerToData, d_graph.SnapRulerToData)
+				new Gtk.ToggleActionEntry("ActionSnapRuler", null, "Snap Ruler to Data", null, null, OnActionSnapRulerToData, d_graph.SnapRulerToData),
+				new Gtk.ToggleActionEntry("ActionSnapRulerAxis", null, "Snap Ruler to Axis", null, null, OnActionSnapRulerToAxis, d_graph.SnapRulerToAxis)
 			});
 			
 			d_popupActions.Add(new Gtk.ActionEntry[] {
@@ -488,11 +490,13 @@ namespace Plot
 			PopupToggleAction("ActionShowRuler").Active = d_graph.ShowRuler;
 			PopupToggleAction("ActionShowRulerAxis").Active = d_graph.ShowRulerAxis;
 			PopupToggleAction("ActionShowGrid").Active = d_graph.ShowGrid;
+			PopupToggleAction("ActionShowSnapGrid").Active = d_graph.ShowSnapGrid;
 			PopupToggleAction("ActionShowLabels").Active = d_graph.ShowLabels;
 			PopupToggleAction("ActionKeepAspect").Active = d_graph.KeepAspect;
 			PopupToggleAction("ActionShowBox").Active = d_graph.ShowBox;
 			PopupToggleAction("ActionShowAxis").Active = d_graph.ShowAxis;
 			PopupToggleAction("ActionSnapRuler").Active = d_graph.SnapRulerToData;
+			PopupToggleAction("ActionSnapRulerAxis").Active = d_graph.SnapRulerToAxis;
 			
 			bool ret;
 			
@@ -741,6 +745,23 @@ namespace Plot
 			}
 		}
 		
+		private void OnActionShowSnapGrid(object source, EventArgs args)
+		{
+			Gtk.ToggleAction action = (Gtk.ToggleAction)source;
+			
+			d_graph.ShowSnapGrid = action.Active;
+			
+			if (action.Active)
+			{
+				d_graph.ShowGrid = true;
+
+				foreach (Ticks ticks in ForeachTicks())
+				{
+					ticks.Visible = true;
+				}
+			}
+		}
+		
 		private void OnActionShowGrid(object source, EventArgs args)
 		{
 			Gtk.ToggleAction action = (Gtk.ToggleAction)source;
@@ -787,6 +808,13 @@ namespace Plot
 			Gtk.ToggleAction action = (Gtk.ToggleAction)source;
 			
 			d_graph.SnapRulerToData = action.Active;
+		}
+		
+		private void OnActionSnapRulerToAxis(object source, EventArgs args)
+		{
+			Gtk.ToggleAction action = (Gtk.ToggleAction)source;
+			
+			d_graph.SnapRulerToAxis = action.Active;
 		}
 		
 		private delegate void ExporterHandler(string filename);
