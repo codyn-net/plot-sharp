@@ -4,8 +4,7 @@ using Biorob.Math;
 
 namespace Plot
 {
-	[Gtk.Binding(Gdk.Key.R, Gdk.ModifierType.ControlMask, "AutoAxis"),
-	 Gtk.Binding(Gdk.Key.Escape, Gdk.ModifierType.None, "UndoLastZoom")]
+	[Gtk.Binding(Gdk.Key.Escape, Gdk.ModifierType.None, "UndoLastZoom")]
 	public class Widget : Gtk.DrawingArea
 	{
 		private struct Ranges
