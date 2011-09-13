@@ -30,10 +30,12 @@ namespace Plot.Renderers
 		private SortedList<Point> d_sortedData;
 
 		private Color d_color;
-		private string d_label;
+		private string d_ylabel;
+		private string d_xlabel;
 		private int d_unprocessed;
 		private int d_lineWidth;
-		private bool d_isMarkup;
+		private bool d_isYMarkup;
+		private bool d_isXMarkup;
 		
 		private double d_markerSize;
 		private MarkerType d_markerStyle;
@@ -56,7 +58,7 @@ namespace Plot.Renderers
 		public Line(IEnumerable<Point> data, Color color, string label)
 		{
 			d_data = new List<Point>(data);
-			d_label = label;
+			d_ylabel = label;
 			d_lineWidth = 1;
 			
 			d_unprocessed = 0;
@@ -184,7 +186,11 @@ namespace Plot.Renderers
 		{
 			base.CopyTo(other);
 
-			other.d_label = d_label;
+			other.d_ylabel = d_ylabel;
+			other.d_xlabel = d_xlabel;
+			
+			other.d_isYMarkup = d_isYMarkup;
+			other.d_isXMarkup = d_isXMarkup;
 			
 			if (d_color != null)
 			{
@@ -434,31 +440,49 @@ namespace Plot.Renderers
 			}
 		}
 		
-		public string LabelMarkup
+		public string YLabelMarkup
 		{
-			get
-			{
-				return d_isMarkup ? d_label : null;
-			}
+			get { return d_isYMarkup ? d_ylabel : null; }
 			set
 			{
-				d_label = value;
-				d_isMarkup = true;
+				d_ylabel = value;
+				d_isYMarkup = true;
 
 				EmitChanged();
 			}
 		}
 		
-		public string Label
+		public string YLabel
 		{
-			get
-			{
-				return !d_isMarkup ? d_label : null;
-			}
+			get { return !d_isYMarkup ? d_ylabel : null; }
 			set
 			{
-				d_label = value;
-				d_isMarkup = false;
+				d_ylabel = value;
+				d_isYMarkup = false;
+
+				EmitChanged();
+			}
+		}
+		
+		public string XLabelMarkup
+		{
+			get { return d_isXMarkup ? d_xlabel : null; }
+			set
+			{
+				d_xlabel = value;
+				d_isXMarkup = true;
+
+				EmitChanged();
+			}
+		}
+		
+		public string XLabel
+		{
+			get { return !d_isXMarkup ? d_xlabel : null; }
+			set
+			{
+				d_xlabel = value;
+				d_isXMarkup = false;
 
 				EmitChanged();
 			}

@@ -34,7 +34,7 @@ namespace Plot.Export
 				
 				foreach (Renderers.Line r in this.Renderers)
 				{
-					header.Add(r.Label);
+					header.Add(r.YLabel);
 				}
 				
 				writer.WriteLine(String.Join(d_delimiter, header.ToArray()));

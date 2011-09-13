@@ -4,13 +4,25 @@ namespace Plot.Renderers
 {
 	public interface ILabeled
 	{
-		string Label
+		string XLabel
 		{
 			get;
 			set;
 		}
 		
-		string LabelMarkup
+		string XLabelMarkup
+		{
+			get;
+			set;
+		}
+		
+		string YLabel
+		{
+			get;
+			set;
+		}
+		
+		string YLabelMarkup
 		{
 			get;
 			set;

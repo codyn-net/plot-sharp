@@ -49,7 +49,7 @@ namespace Plot
 		private Point d_previousAxisSpan;
 		private Point d_previousAxisOrigin;
 		
-		private Dictionary<Renderers.ILabeled, Rectangle> d_labelRegions;
+		private Dictionary<Renderers.ILabeled, List<Rectangle>> d_labelRegions;
 		
 		// User configurable
 
@@ -113,7 +113,7 @@ namespace Plot
 				RecalculateXAxis();
 			};
 			
-			d_labelRegions = new Dictionary<Renderers.ILabeled, Rectangle>();
+			d_labelRegions = new Dictionary<Renderers.ILabeled, List<Rectangle>>();
 			
 			d_xaxis.Changed += delegate {
 				CheckAspect();
@@ -1974,6 +1974,8 @@ namespace Plot
 			                     (int)(color.B * 255));
 		}
 		
+		private delegate string LabelSelector(Renderers.ILabeled labeled, out bool ismarkup);
+		
 		private void DrawLabels(Cairo.Context ctx)
 		{
 			d_labelRegions.Clear();
@@ -1983,6 +1985,21 @@ namespace Plot
 				return;
 			}
 			
+			DrawLabels(ctx, true, true, delegate (Renderers.ILabeled labeled, out bool ismarkup) {
+				ismarkup = (labeled.YLabelMarkup != null);
+				
+				return ismarkup ? labeled.YLabelMarkup : labeled.YLabel;
+			});
+			
+			DrawLabels(ctx, false, false, delegate (Renderers.ILabeled labeled, out bool ismarkup) {
+				ismarkup = (labeled.XLabelMarkup != null);
+				
+				return ismarkup ? labeled.XLabelMarkup : labeled.XLabel;
+			});
+		}
+		
+		private void DrawLabels(Cairo.Context ctx, bool aligntop, bool alignleft, LabelSelector selector)
+		{			
 			using (Pango.Layout layout = Pango.CairoHelper.CreateLayout(ctx))
 			{
 				if (d_font != null)
@@ -1995,18 +2012,23 @@ namespace Plot
 				foreach (Renderers.Renderer renderer in d_renderers)
 				{
 					Renderers.ILabeled labeled = renderer as Renderers.ILabeled;
-				
-					if (labeled == null || (String.IsNullOrEmpty(labeled.LabelMarkup) && 
-					                        String.IsNullOrEmpty(labeled.Label)))
+					
+					if (labeled == null)
 					{
 						continue;
 					}
 					
-					string lbl = labeled.LabelMarkup;
+					bool ismarkup;
+					string lbl = selector(labeled, out ismarkup);
 					
-					if (String.IsNullOrEmpty(lbl))
-					{					
-						lbl = System.Security.SecurityElement.Escape(labeled.Label);
+					if (lbl == null)
+					{
+						continue;
+					}
+					
+					if (!ismarkup)
+					{
+						lbl = System.Security.SecurityElement.Escape(lbl);
 					}
 
 					Renderers.IColored colored = labeled as Renderers.IColored;
@@ -2036,13 +2058,36 @@ namespace Plot
 
 					if (lastRegion != null)
 					{
-						region.X = lastRegion.X + lastRegion.Width;
+						if (alignleft)
+						{
+							region.X = lastRegion.X + lastRegion.Width;
+						}
+						else
+						{
+							region.X = lastRegion.X - lastRegion.Width - width - 2;
+						}
+
 						region.Y = lastRegion.Y;
 					}
 					else
 					{
-						region.X = 0;
-						region.Y = 0;
+						if (aligntop)
+						{
+							region.Y = 0;
+						}
+						else
+						{
+							region.Y = d_dimensions.Height - height;
+						}
+						
+						if (alignleft)
+						{
+							region.X = 0;
+						}
+						else
+						{
+							region.X = d_dimensions.Width - width - 2;
+						}
 					}
 					
 					region.Width = width + 4;
@@ -2052,13 +2097,23 @@ namespace Plot
 					d_axisLabelColors.Bg.Set(ctx);
 					ctx.Fill();
 					
-					ctx.MoveTo(region.X + 2, region.Y + 2);
+					int xdir = alignleft ? 1 : -1;
+					int ydir = aligntop ? 1 : -1;
+					
+					ctx.MoveTo(region.X + 2 * xdir, region.Y + 2 * ydir);
 					d_gridColor.Set(ctx);
 				
 					Pango.CairoHelper.ShowLayout(ctx, layout);
 					
-					d_labelRegions[labeled] = region;
+					List<Rectangle> lst;
 
+					if (!d_labelRegions.TryGetValue(labeled, out lst))
+					{
+						lst = new List<Rectangle>();
+						d_labelRegions[labeled] = lst;
+					}
+
+					lst.Add(region);
 					lastRegion = region;
 				}				
 			}
@@ -2200,18 +2255,6 @@ namespace Plot
 			d_dimensions = dims;
 		}
 		
-		public Rectangle RendererRegion(Renderers.Renderer renderer)
-		{
-			Renderers.ILabeled lbl = renderer as Renderers.ILabeled;
-			
-			if (lbl == null)
-			{
-				return null;
-			}
-			
-			return d_labelRegions[lbl].Copy();
-		}
-		
 		public void Draw(Cairo.Context ctx)
 		{
 			if (d_recreate)
@@ -2325,12 +2368,15 @@ namespace Plot
 		{
 			renderer = null;
 			
-			foreach (KeyValuePair<Renderers.ILabeled, Rectangle> pair in d_labelRegions)
+			foreach (KeyValuePair<Renderers.ILabeled, List<Rectangle>> pair in d_labelRegions)
 			{
-				if (pair.Value.Contains(pos))
+				foreach (Rectangle r in pair.Value)
 				{
-					renderer = (Renderers.Renderer)pair.Key;
-					return true;
+					if (r.Contains(pos))
+					{
+						renderer = (Renderers.Renderer)pair.Key;
+						return true;
+					}
 				}
 			}
 			
