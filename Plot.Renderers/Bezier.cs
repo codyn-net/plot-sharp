@@ -14,6 +14,11 @@ namespace Plot.Renderers
 		
 		public Bezier(PiecewisePolynomial polynomial, Color color, string label) : base(color, label)
 		{
+			SetPiecewisePolynomial(polynomial);
+		}
+		
+		private void SetPiecewisePolynomial(PiecewisePolynomial polynomial)
+		{
 			d_polynomial = polynomial;
 			
 			if (d_polynomial != null)
@@ -33,7 +38,12 @@ namespace Plot.Renderers
 					pts.Add(new Point(piece.End, piece.Coefficients.Sum()));
 				}
 				
-				base.Data = pts;
+				Data = pts;
+			}
+			else
+			{
+				d_bezier = null;
+				Data = new List<Point>();
 			}
 		}
 
@@ -57,11 +67,32 @@ namespace Plot.Renderers
 		{
 		}
 		
-		public new PiecewisePolynomial Data
+		protected virtual Bezier CopyTo(Bezier other)
+		{
+			base.CopyTo(other);
+			
+			if (d_polynomial != null)
+			{
+				other.PiecewisePolynomial = new PiecewisePolynomial(d_polynomial.Pieces);
+			}
+			
+			return other;
+		}
+		
+		public override Renderer Copy()
+		{
+			return CopyTo(new Bezier());
+		}
+		
+		public PiecewisePolynomial PiecewisePolynomial
 		{
 			get
 			{
 				return d_polynomial;
+			}
+			set
+			{
+				SetPiecewisePolynomial(value);
 			}
 		}
 
