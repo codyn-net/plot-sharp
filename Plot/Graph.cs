@@ -253,7 +253,7 @@ namespace Plot
 			get { return d_snapRulerToAxisFactor; }
 			set
 			{
-				if (d_snapRulerToAxisFactor != value)
+				if (d_snapRulerToAxisFactor != value && value > 0)
 				{
 					d_snapRulerToAxisFactor = value;
 					EmitRequestRedraw();

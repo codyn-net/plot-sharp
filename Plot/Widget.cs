@@ -911,6 +911,7 @@ namespace Plot
 				case Gdk.Key.Control_L:
 				case Gdk.Key.Control_R:
 					d_graph.SnapRulerToAxisFactor = d_previousRulerToAxisFactor;
+					d_previousRulerToAxisFactor = 0;
 				break;
 				default:
 				break;
