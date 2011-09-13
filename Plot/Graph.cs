@@ -2078,7 +2078,7 @@ namespace Plot
 						}
 						else
 						{
-							region.X = lastRegion.X - lastRegion.Width - width - 2;
+							region.X = lastRegion.X - width - 2;
 						}
 
 						region.Y = lastRegion.Y;
@@ -2091,7 +2091,7 @@ namespace Plot
 						}
 						else
 						{
-							region.Y = d_dimensions.Height - height;
+							region.Y = d_dimensions.Height - height - 4;
 						}
 						
 						if (alignleft)
@@ -2100,7 +2100,7 @@ namespace Plot
 						}
 						else
 						{
-							region.X = d_dimensions.Width - width - 2;
+							region.X = d_dimensions.Width - width - 4;
 						}
 					}
 					
@@ -2111,10 +2111,7 @@ namespace Plot
 					d_axisLabelColors.Bg.Set(ctx);
 					ctx.Fill();
 					
-					int xdir = alignleft ? 1 : -1;
-					int ydir = aligntop ? 1 : -1;
-					
-					ctx.MoveTo(region.X + 2 * xdir, region.Y + 2 * ydir);
+					ctx.MoveTo(region.X + 2, region.Y + 2);
 					d_gridColor.Set(ctx);
 				
 					Pango.CairoHelper.ShowLayout(ctx, layout);
