@@ -723,12 +723,25 @@ namespace Plot
 			
 			renderer.Changed += HandleRendererChanged;
 			renderer.RulerChanged += HandleRendererRulerChanged;
+			renderer.ActiveChanged += HandleRendererActiveChanged;
 
 			renderer.XRange.Changed += HandleRendererXRangeChanged;
 			renderer.YRange.Changed += HandleRendererYRangeChanged;
 			
 			HandleRendererXRangeChanged(renderer.XRange, new EventArgs());
 			HandleRendererYRangeChanged(renderer.YRange, new EventArgs());
+			
+			Redraw();
+		}
+		
+		private void HandleRendererActiveChanged(object source, EventArgs args)
+		{
+			Renderers.Renderer renderer = source as Renderers.Renderer;
+			
+			if (renderer.CanRule)
+			{
+				renderer.HasRuler = renderer.Active;
+			}
 			
 			Redraw();
 		}
@@ -929,6 +942,7 @@ namespace Plot
 
 			renderer.Changed -= HandleRendererChanged;
 			renderer.RulerChanged -= HandleRendererRulerChanged;
+			renderer.ActiveChanged -= HandleRendererActiveChanged;
 
 			renderer.XRange.Changed -= HandleRendererXRangeChanged;
 			renderer.YRange.Changed -= HandleRendererYRangeChanged;
@@ -2044,7 +2058,7 @@ namespace Plot
 						formatted = lbl;
 					}
 					
-					if (d_showRuler && renderer.HasRuler)
+					if (renderer.Active)
 					{
 						formatted = "<b>" + formatted + "</b>";
 					}

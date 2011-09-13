@@ -12,23 +12,19 @@ namespace Plot.Renderers
 		private Units d_yunits;
 		
 		private bool d_hasRuler;
+		private bool d_active;
 		
 		public event EventHandler RulerChanged = delegate {};
+		public event EventHandler ActiveChanged = delegate {};
 		
 		public Range XRange
 		{
-			get
-			{
-				return d_xrange;
-			}
+			get { return d_xrange; }
 		}
 		
 		public Range YRange
 		{
-			get
-			{
-				return d_yrange;
-			}
+			get { return d_yrange; }
 		}
 		
 		public Renderer()
@@ -73,18 +69,26 @@ namespace Plot.Renderers
 		
 		public virtual bool CanRule
 		{
-			get
+			get { return false; }
+		}
+		
+		
+		public bool Active
+		{
+			get { return d_active; }
+			set
 			{
-				return false;
+				if (d_active != value)
+				{
+					d_active = value;
+					ActiveChanged(this, new EventArgs());
+				}
 			}
 		}
 		
 		public bool HasRuler
 		{
-			get
-			{
-				return CanRule ? d_hasRuler : false;
-			}
+			get { return CanRule ? d_hasRuler : false; }
 			set
 			{
 				if (CanRule && d_hasRuler != value)

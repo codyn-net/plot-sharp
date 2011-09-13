@@ -601,7 +601,7 @@ namespace Plot
 				
 				if (d_graph.LabelHitTest(new Point(evnt.X, evnt.Y), out renderer))
 				{
-					renderer.HasRuler = !renderer.HasRuler;
+					renderer.Active = !renderer.Active;
 				}
 			}
 			
