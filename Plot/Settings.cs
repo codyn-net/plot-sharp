@@ -89,7 +89,7 @@ namespace Plot
 			GridColor = (new Color(0.95, 0.95, 0.95)).Hex;
 
 			AxisLabelColorsFg = (new Color(0, 0, 0)).Hex;
-			AxisLabelColorsBg = (new Color(1, 1, 1, 0.8)).Hex;
+			AxisLabelColorsBg = (new Color(1, 1, 1, 0.6)).Hex;
 		}
 		
 		public Settings(Graph graph) : this()
