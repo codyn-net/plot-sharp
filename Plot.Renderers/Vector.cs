@@ -11,8 +11,11 @@ namespace Plot.Renderers
 			Axis,
 			Pixel
 		}
+		
+		private List<double> d_cosAlpha;
+		private List<double> d_sinAlpha;
 
-		private List<double> d_dydx;
+		private List<double> d_alpha;
 		private List<double> d_length;
 		private List<double> d_lengthNorm;
 		private double d_equalLength;
@@ -24,7 +27,9 @@ namespace Plot.Renderers
 
 		public Vector(IEnumerable<Point> data, Color color, string label) : base(data, color, label)
 		{
-			d_dydx = new List<double>();
+			d_alpha = new List<double>();
+			d_cosAlpha = new List<double>();
+			d_sinAlpha = new List<double>();
 			d_length = new List<double>();
 			d_lengthNorm = new List<double>();
 			d_equalLength = 10;
@@ -65,7 +70,10 @@ namespace Plot.Renderers
 			 v.d_arrowHeadSize = d_arrowHeadSize;
 			 v.d_lengthType = d_lengthType;
 			 
-			 v.d_dydx = new List<double>(d_dydx);
+			 v.d_alpha = new List<double>(d_alpha);
+			 v.d_cosAlpha = new List<double>(d_cosAlpha);
+			 v.d_sinAlpha = new List<double>(d_sinAlpha);
+
 			 v.d_length = new List<double>(d_length);
 			 v.d_lengthNorm = new List<double>(d_lengthNorm);
 			 
@@ -101,16 +109,16 @@ namespace Plot.Renderers
 			}
 		}
 		
-		public IEnumerable<double> DyDx
+		public IEnumerable<double> Alpha
 		{
 			get
 			{
-				return d_dydx;
+				return d_alpha;
 			}
 			set
 			{
-				d_dydx.Clear();
-				d_dydx.AddRange(value);
+				d_alpha.Clear();
+				d_alpha.AddRange(value);
 				
 				Recalculate();
 				
@@ -175,6 +183,15 @@ namespace Plot.Renderers
 		
 		private void Recalculate()
 		{
+			d_cosAlpha = new List<double>(d_alpha.Count);
+			d_sinAlpha = new List<double>(d_alpha.Count);
+			
+			foreach (double alpha in d_alpha)
+			{
+				d_cosAlpha.Add(System.Math.Cos(alpha));
+				d_sinAlpha.Add(System.Math.Sin(alpha));
+			}
+
 			if (d_lengthType == LengthType.Pixel)
 			{
 				/* Do that later when we know the scale */
@@ -184,7 +201,7 @@ namespace Plot.Renderers
 
 			d_lengthNorm.Clear();
 
-			for (int i = 0; i < d_dydx.Count; ++i)
+			for (int i = 0; i < d_alpha.Count; ++i)
 			{
 				double l = d_equalLength;
 				
@@ -193,7 +210,7 @@ namespace Plot.Renderers
 					l = d_length[i];
 				}
 
-				d_lengthNorm.Add(l / Math.Sqrt(1 + d_dydx[i] * d_dydx[i]));
+				d_lengthNorm.Add(l);
 			}
 		}
 		
@@ -249,17 +266,19 @@ namespace Plot.Renderers
 			/* Recalculate d_lengthNorm so that when scaled with 'scale' the length
 			   is equal to d_pixelLength... */
 			d_lengthNorm.Clear();
+			
+			double sql = d_pixelLength * d_pixelLength;
 
-			for (int i = 0; i < d_dydx.Count; ++i)
+			for (int i = 0; i < d_alpha.Count; ++i)
 			{
-				double l = d_pixelLength;
+				double l = sql;
 				
 				if (i < d_length.Count)
 				{
-					l = d_length[i];
+					l = d_length[i] * d_length[i];
 				}
 
-				d_lengthNorm.Add(l / Math.Sqrt(d_scale.X * d_scale.X + d_dydx[i] * d_dydx[i] * d_scale.Y * d_scale.Y));
+				d_lengthNorm.Add(Math.Sqrt(l / (d_scale.X * d_scale.X * d_cosAlpha[i] * d_cosAlpha[i] + d_scale.Y * d_scale.Y * d_sinAlpha[i] * d_sinAlpha[i])));
 			}
 		}
 		
@@ -272,7 +291,7 @@ namespace Plot.Renderers
 			
 			int endidx;
 			
-			endidx = Math.Min(idx + length, d_dydx.Count);
+			endidx = Math.Min(idx + length, d_alpha.Count);
 			
 			context.SetSourceRGB(Color.R, Color.G, Color.B);
 			context.LineWidth = LineWidth;
@@ -292,8 +311,8 @@ namespace Plot.Renderers
 				double py = scale.Y * item.Y;
 	
 				// dx, dy from px, py to where to draw the line
-				double pdx = d_lengthNorm[i] * scale.X;
-				double pdy = d_lengthNorm[i] * d_dydx[i] * scale.Y;
+				double pdx = d_lengthNorm[i] * scale.X * d_cosAlpha[i];
+				double pdy = d_lengthNorm[i] * scale.Y * d_sinAlpha[i];
 				
 				double l = Math.Sqrt(pdx * pdx + pdy * pdy);
 				
