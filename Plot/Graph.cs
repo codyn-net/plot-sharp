@@ -2078,7 +2078,7 @@ namespace Plot
 						}
 						else
 						{
-							region.X = lastRegion.X - width - 2;
+							region.X = lastRegion.X - width - 4;
 						}
 
 						region.Y = lastRegion.Y;
