@@ -25,7 +25,7 @@ namespace Plot.Renderers
 		private bool d_drawArrowHead;
 		private double d_arrowHeadSize;
 
-		public Vector(IEnumerable<Point> data, Color color, string label) : base(data, color, label)
+		public Vector()
 		{
 			d_alpha = new List<double>();
 			d_cosAlpha = new List<double>();
@@ -38,7 +38,7 @@ namespace Plot.Renderers
 			d_drawArrowHead = true;
 			d_arrowHeadSize = -1;
 			
-			LineStyle = Line.LineType.None;
+			LineStyle = LineStyle.None;
 		}
 		
 		public bool ShowArrowHead
@@ -231,26 +231,6 @@ namespace Plot.Renderers
 			}
 		}
 		
-		public Vector(IEnumerable<Point> data, Color color) : this(data, color, "")
-		{
-		}
-		
-		public Vector(IEnumerable<Point> data) : this(data, null, "")
-		{
-		}
-
-		public Vector(Color color, string name) : this(new Point[] {}, color, "")
-		{
-		}
-		
-		public Vector(string name) : this(null, "")
-		{
-		}
-		
-		public Vector() : this("")
-		{
-		}
-		
 		private bool SameScale(Point scale)
 		{
 			if (d_scale == null)
@@ -316,7 +296,7 @@ namespace Plot.Renderers
 				
 				double l = Math.Sqrt(pdx * pdx + pdy * pdy);
 				
-				if (MarkerStyle == MarkerType.Circle)
+				if (MarkerStyle == MarkerStyle.Circle)
 				{
 					// Start at the edge of the circle
 					px += 0.5 * MarkerSize / l * pdx;
@@ -355,9 +335,9 @@ namespace Plot.Renderers
 					//context.LineTo(ppx - l * (pdx - pdy * 0.5), ppy - l * (pdy + pdx * 0.5));
 					//context.ClosePath();
 				
-					if (MarkerStyle == MarkerType.FilledCircle ||
-					    MarkerStyle == MarkerType.FilledSquare ||
-					    MarkerStyle == MarkerType.FilledTriangle)
+					if (MarkerStyle == MarkerStyle.FilledCircle ||
+					    MarkerStyle == MarkerStyle.FilledSquare ||
+					    MarkerStyle == MarkerStyle.FilledTriangle)
 					{
 						context.Fill();
 					}

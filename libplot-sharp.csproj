@@ -55,7 +55,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\usr\lib\cli\Tao.OpenGl-3.0\Tao.OpenGl.dll</HintPath>
     </Reference>
-    <Reference Include="Biorob.Math, Version=1.0.4269.28877, Culture=neutral, PublicKeyToken=null">
+    <Reference Include="Biorob.Math, Version=1.0.4272.28585, Culture=neutral, PublicKeyToken=null">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\.packeteer\install-cpg\lib\libbiorob-math1-sharp\Biorob.Math.dll</HintPath>
     </Reference>
@@ -98,6 +98,11 @@
     <Compile Include="Plot\Main.cs" />
     <Compile Include="Plot\WidgetGL.cs" />
     <Compile Include="Plot.Renderers\Bezier.cs" />
+    <Compile Include="Plot.Renderers\Area.cs" />
+    <Compile Include="Plot.Renderers\Error.cs" />
+    <Compile Include="Plot.Renderers\Marker.cs" />
+    <Compile Include="Plot.Renderers\MarkerStyle.cs" />
+    <Compile Include="Plot.Renderers\LineStyle.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Plot\" />

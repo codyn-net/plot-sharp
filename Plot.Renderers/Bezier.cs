@@ -12,9 +12,8 @@ namespace Plot.Renderers
 		private Biorob.Math.Functions.Bezier d_bezier;
 		private PiecewisePolynomial d_polynomial;
 		
-		public Bezier(PiecewisePolynomial polynomial, Color color, string label) : base(color, label)
+		public Bezier()
 		{
-			SetPiecewisePolynomial(polynomial);
 		}
 		
 		private void SetPiecewisePolynomial(PiecewisePolynomial polynomial)
@@ -46,26 +45,6 @@ namespace Plot.Renderers
 				Data = new List<Point>();
 			}
 		}
-
-		public Bezier(PiecewisePolynomial poly, Color color) : this(poly, color, null)
-		{
-		}
-		
-		public Bezier(PiecewisePolynomial poly) : this(poly, null)
-		{
-		}
-		
-		public Bezier(Color color, string name) : this(null, color, name)
-		{
-		}
-		
-		public Bezier(string name) : this(null, null, name)
-		{
-		}
-		
-		public Bezier() : this(null, null, null)
-		{
-		}
 		
 		protected virtual Bezier CopyTo(Bezier other)
 		{
@@ -77,11 +56,6 @@ namespace Plot.Renderers
 			}
 			
 			return other;
-		}
-		
-		public override Renderer Copy()
-		{
-			return CopyTo(new Bezier());
 		}
 		
 		public PiecewisePolynomial PiecewisePolynomial
@@ -193,6 +167,11 @@ namespace Plot.Renderers
 
 		public override void Render(Cairo.Context context, Point scale)
 		{
+			if (d_bezier == null)
+			{
+				return;
+			}
+
 			// First render our interpolated line
 			RenderBezier(context, scale);
 			

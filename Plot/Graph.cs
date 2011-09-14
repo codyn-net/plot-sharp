@@ -556,50 +556,98 @@ namespace Plot
 		
 		public int Count
 		{
-			get
+			get { return d_renderers.Count; }
+		}
+		
+		public void Clear()
+		{
+			foreach (Renderers.Renderer r in d_renderers)
 			{
-				return d_renderers.Count;
+				Disconnect(r);
 			}
+			
+			d_renderers.Clear();
 		}
 		
 		public Renderers.Renderer[] Renderers
 		{
-			get
+			get { return d_renderers.ToArray(); }
+			set
 			{
-				return d_renderers.ToArray();
+				Clear();
+				
+				foreach (Renderers.Renderer r in value)
+				{
+					Add(r);
+				}
 			}
+		}
+		
+		private void Reorder(Renderers.Renderer renderer, int relto)
+		{
+			int idx = d_renderers.IndexOf(renderer);
+			
+			if (idx < 0)
+			{
+				return;
+			}
+			
+			int to = System.Math.Max(0, System.Math.Min(d_renderers.Count - 1, idx + relto));
+			
+			if (to == idx)
+			{
+				return;
+			}
+			
+			// Shift
+			int dir = System.Math.Sign(to - idx);
+			
+			for (int i = idx; i != to; i += dir)
+			{
+				d_renderers[idx] = d_renderers[idx + dir];
+			}
+			
+			d_renderers[to] = renderer;
+		}
+		
+		public void MoveFront(Renderers.Renderer renderer)
+		{
+			Reorder(renderer, 1);
+		}
+		
+		public void MoveBack(Renderers.Renderer renderer)
+		{
+			Reorder(renderer, -1);
+		}
+		
+		public void MoveTop(Renderers.Renderer renderer)
+		{
+			Reorder(renderer, d_renderers.Count);
+		}
+		
+		public void MoveBottom(Renderers.Renderer renderer)
+		{
+			Reorder(renderer, -d_renderers.Count);
 		}
 		
 		public Range DataXRange
 		{
-			get
-			{
-				return d_renderersXRange;
-			}
+			get { return d_renderersXRange; }
 		}
 		
 		public Range DataYRange
 		{
-			get
-			{
-				return d_renderersYRange;
-			}
+			get { return d_renderersYRange; }
 		}
 		
 		public Range YAxis
 		{
-			get
-			{
-				return d_yaxis;
-			}
+			get { return d_yaxis; }
 		}
 		
 		public AxisMode YAxisMode
 		{
-			get
-			{
-				return d_yaxisMode;
-			}
+			get { return d_yaxisMode; }
 			set
 			{
 				if (d_yaxisMode != value)
@@ -613,18 +661,12 @@ namespace Plot
 		
 		public Range XAxis
 		{
-			get
-			{
-				return d_xaxis;
-			}
+			get { return d_xaxis; }
 		}
 		
 		public AxisMode XAxisMode
 		{
-			get
-			{
-				return d_xaxisMode;
-			}
+			get { return d_xaxisMode; }
 			set
 			{
 				if (d_xaxisMode != value)
@@ -638,10 +680,7 @@ namespace Plot
 		
 		public double AxisAspect
 		{
-			get
-			{
-				return d_axisAspect;
-			}
+			get { return d_axisAspect; }
 			set
 			{
 				if (d_axisAspect != value)
@@ -666,18 +705,12 @@ namespace Plot
 		
 		public Ticks XTicks
 		{
-			get
-			{
-				return d_xticks;
-			}
+			get { return d_xticks; }
 		}
 		
 		public Ticks YTicks
 		{
-			get
-			{
-				return d_yticks;
-			}
+			get { return d_yticks; }
 		}
 		
 		private void UpdateColors()
@@ -920,6 +953,16 @@ namespace Plot
 			Redraw();
 		}
 		
+		private void Disconnect(Renderers.Renderer renderer)
+		{
+			renderer.Changed -= HandleRendererChanged;
+			renderer.RulerChanged -= HandleRendererRulerChanged;
+			renderer.ActiveChanged -= HandleRendererActiveChanged;
+
+			renderer.XRange.Changed -= HandleRendererXRangeChanged;
+			renderer.YRange.Changed -= HandleRendererYRangeChanged;
+		}
+		
 		public void Remove(Renderers.Renderer renderer)
 		{
 			int idx = d_renderers.IndexOf(renderer);
@@ -928,39 +971,11 @@ namespace Plot
 			{
 				return;
 			}
-			
-			int prev;
-			
-			if (idx == 0)
-			{
-				prev = 0;
-			}
-			else
-			{
-				prev = idx - 1;
-			}
-
-			renderer.Changed -= HandleRendererChanged;
-			renderer.RulerChanged -= HandleRendererRulerChanged;
-			renderer.ActiveChanged -= HandleRendererActiveChanged;
-
-			renderer.XRange.Changed -= HandleRendererXRangeChanged;
-			renderer.YRange.Changed -= HandleRendererYRangeChanged;
-			
+						
 			d_renderers.RemoveAt(idx);
-			
-			if (renderer.HasRuler)
-			{
-				renderer.HasRuler = false;
-
-				if (d_renderers.Count > 0)
-				{
-					d_renderers[prev].HasRuler = true;
-				}
-			}
+			Disconnect(renderer);
 			
 			UpdateColors();
-
 			Redraw();
 		}
 		
