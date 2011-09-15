@@ -54,20 +54,28 @@ FILES = \
 	Plot/ColorFgBg.cs \
 	Plot/ColorMap.cs \
 	Plot/Directories.cs \
+	Plot.Export/Data.cs \
 	Plot.Export/Exporter.cs \
+	Plot.Export/Gdk.cs \
+	Plot.Export/Matlab.cs \
 	Plot.Export/Pdf.cs \
 	Plot.Export/Png.cs \
 	Plot.Export/Ps.cs \
-	Plot.Export/Svg.cs \
-	Plot.Export/Gdk.cs \
 	Plot.Export/Surface.cs \
+	Plot.Export/Svg.cs \
+	Plot.Export/Text.cs \
 	Plot/Graph.cs \
 	Plot/Rectangle.cs \
+	Plot.Renderers/Area.cs \
+	Plot.Renderers/Bezier.cs \
 	Plot.Renderers/Box.cs \
+	Plot.Renderers/Error.cs \
 	Plot.Renderers/IColored.cs \
 	Plot.Renderers/ILabeled.cs \
-	Plot.Renderers/Bezier.cs \
 	Plot.Renderers/Line.cs \
+	Plot.Renderers/LineStyle.cs \
+	Plot.Renderers/Marker.cs \
+	Plot.Renderers/MarkerStyle.cs \
 	Plot.Renderers/Renderer.cs \
 	Plot.Renderers/TextBox.cs \
 	Plot.Renderers/Vector.cs \
