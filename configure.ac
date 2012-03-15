@@ -54,7 +54,7 @@ dnl package checks, per config
 
 PKG_CHECK_MODULES([GTK_SHARP], [gtk-sharp-2.0])
 
-PKG_CHECK_MODULES([BIOROB_MATH_SHARP], [biorob-math-sharp-1.0])
+PKG_CHECK_MODULES([BIOROB_MATH_SHARP], [biorob-math-sharp-1.0 >= 0.4])
 
 UNSTABLE_INSTALL_ASSEMBLIES="biorob-math-sharp-1.0"
 INSTALLED_ASSEMBLIES="`$PKG_CONFIG --variable=Libraries \"$UNSTABLE_INSTALL_ASSEMBLIES\"`"
