@@ -1,3 +1,11 @@
+libplot1-sharp (0.2-1) UNRELEASED; urgency=low
+
+  * New upstream release
+  * Fix build for distros
+
+ -- Jesse van den Kieboom <jesse.vandenkieboom@epfl.ch>  Wed, 26 Sep 2012 18:01:57 +0200
+
+
 libplot1-sharp (0.1-1) UNRELEASED; urgency=low
 
   * Initial release.
