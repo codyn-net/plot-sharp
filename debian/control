@@ -5,7 +5,7 @@ Build-Depends: debhelper (>= 7),
                autotools-dev,
                cdbs,
                pkg-config,
-               mono-dmcs,
+               mono-gmcs,
                libbiorob-math1-sharp (>= 0.6),
                libglib2.0-cil-dev,
                libgtk2.0-cil-dev
@@ -16,6 +16,6 @@ Homepage: http://biorob.epfl.ch
 Package: libplot1-sharp
 Section: libs
 Architecture: any
-Depends: mono-runtime, libmono-system4.0-cil, libmono-corlib4.0-cil, libglib2.0-cil, libgtk2.0-cil
+Depends: mono-runtime, libmono-system2.0-cil, libmono-corlib2.0-cil, libglib2.0-cil, libgtk2.0-cil
 Description: C# plotting library
  C# plotting library
