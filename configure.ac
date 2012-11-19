@@ -55,10 +55,25 @@ dnl package checks, per config
 
 PKG_CHECK_MODULES([GTK_SHARP], [gtk-sharp-2.0])
 
+AC_ARG_WITH([framework],
+             AS_HELP_STRING([--with-framework=path],[Enable build for OS X framework (default: no)]),
+              [with_framework=$withval],
+              [with_framework=no])
+
+if test "x$with_framework" != "xno"; then
+OLDPKG_CONFIG="$PKG_CONFIG"
+PKG_CONFIG="$PKG_CONFIG --define-variable=prefix=$with_framework"
+fi
+
 PKG_CHECK_MODULES([BIOROB_MATH_SHARP], [biorob-math-sharp-1.0 >= 0.4])
 
 UNSTABLE_INSTALL_ASSEMBLIES="biorob-math-sharp-1.0"
 INSTALLED_ASSEMBLIES="`$PKG_CONFIG --variable=Libraries \"$UNSTABLE_INSTALL_ASSEMBLIES\"`"
+
+if test "x$with_framework" != "xno"; then
+PKG_CONFIG="$OLDPKG_CONFIG"
+fi
+
 AC_SUBST(INSTALLED_ASSEMBLIES)
 
 AC_CONFIG_FILES([
