@@ -95,7 +95,6 @@
     <Compile Include="Plot.Export\Matlab.cs" />
     <Compile Include="Plot.Export\Text.cs" />
     <Compile Include="Plot.Export\Data.cs" />
-    <Compile Include="Plot\Main.cs" />
     <Compile Include="Plot\WidgetGL.cs" />
     <Compile Include="Plot.Renderers\Bezier.cs" />
     <Compile Include="Plot.Renderers\Area.cs" />
