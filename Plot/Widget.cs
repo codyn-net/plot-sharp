@@ -853,7 +853,7 @@ namespace Plot
 
 			info = exporterType.GetConstructor(new Type[] {typeof(string), typeof(int), typeof(int)});
 			
-			Export.Exporter ex = (Export.Exporter)info.Invoke(new object[] {filename, d_graph.Dimensions.Width, d_graph.Dimensions.Height});
+			Export.Exporter ex = (Export.Exporter)info.Invoke(new object[] {filename, (int)d_graph.Dimensions.Width, (int)d_graph.Dimensions.Height});
 			
 			ex.Do(() => {
 				ex.Export(d_graph, new Rectangle(0, 0, ex.Width, ex.Height));
