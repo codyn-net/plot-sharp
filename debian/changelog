@@ -1,3 +1,9 @@
+libplot1-sharp (0.3-1) UNRELEASED; urgency=low
+
+  * New upstream release
+
+ -- Jesse van den Kieboom <jesse.vandenkieboom@epfl.ch>  Tue, 27 Aug 2013 17:44:05 +0200
+
 libplot1-sharp (0.2-1) UNRELEASED; urgency=low
 
   * New upstream release
