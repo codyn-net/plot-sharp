@@ -5,3 +5,5 @@ EXTRA_DIST =
 
 # Include project specific makefile
 include plot-sharp.make
+
+.NOTPARALLEL:
